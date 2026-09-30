@@ -1,0 +1,5 @@
+# Temporales de draw.io (diagrams.net)
+# Backup y archivos temporales que genera el editor de escritorio
+*.drawio.bkp
+*.drawio.dtmp
+*.drawio.tmp
