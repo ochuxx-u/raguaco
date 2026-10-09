@@ -87,6 +87,7 @@ rag_app/
 │   │       ├── text_cleaner.py
 │   │       └── chunking_service.py
 │   └── tests/
+│── frontend/
 ├── migrations/
 ├── scripts/
 ├── docker/
