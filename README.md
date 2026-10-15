@@ -6,6 +6,15 @@
 
 ## Documentación
 
+### Inciar aplicación
+Para iniciar el servidor de Raguaco es necesario:
+1. Instalar dependencias en el archivo `requirements.txt`.
+2. Ejecutar servidor:
+```
+cd App && uvicorn main:app
+```
+
+
 - [Requerimientos funcionales y no funcionales](Docs/Requerimientos/RF%20-%20RNF.md)
 - [Diagramas UML](Docs/DIAGRAMS.md)
 
