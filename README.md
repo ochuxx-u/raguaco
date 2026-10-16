@@ -6,7 +6,7 @@
 
 ## Documentación
 
-### Inciar aplicación
+### Inciar aplicación (backend)
 Para iniciar el servidor de Raguaco es necesario:
 1. Instalar dependencias en el archivo `requirements.txt`.
 2. Ejecutar servidor:

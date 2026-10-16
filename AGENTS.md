@@ -23,6 +23,11 @@ Key product constraints traced from requirements (`Docs/Requerimientos/RF - RNF.
 - Sources live in `Docs/UML/archivos/*.drawio`; exported PNGs in `Docs/UML/imagenes/*.png`. `Docs/DIAGRAMS.md` embeds the PNGs — after editing a `.drawio`, re-export the matching PNG or docs go stale.
 - Draw.io temp/backup files are already gitignored (`*.drawio.bkp`, `*.dtmp`, `*.tmp`).
 
+## Working directory
+
+- **Always work from `App/`, never from the repo root**: start each shell/session with `cd App`, and run commands, servers, tests and Python imports as if `App/` were the project root (e.g. `uvicorn main:app`, `from api.routes.documents import router`). Don't rely on the repo root being the cwd.
+- Paths quoted in this file that start with `Docs/` (and `App/` itself) remain relative to the **repo root** — they describe repo layout, not cwd-relative targets.
+
 ## Conventions
 
 - All prose (README, Docs, commit messages) is in **Spanish**; match it when writing user-facing content. Code identifiers/comments can be English.
