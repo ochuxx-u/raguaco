@@ -52,6 +52,7 @@ rag_app/
 │   │       ├── documents.py
 │   │       ├── queries.py
 │   │       ├── conversations.py
+│   │       ├── users.py
 │   │       └── voice.py
 │   ├── core/
 │   │   ├── config.py
