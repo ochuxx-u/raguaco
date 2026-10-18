@@ -1,6 +1,8 @@
 -- =====================================================================
 -- RAGUACO · Esquema inicial de base de datos (Supabase / PostgreSQL)
 -- Basado en el diagrama entidad-relación del proyecto.
+-- Versión 2: incluye las columnas que pide el mockup y FRONTEND_SPEC.md
+-- (progreso, num_paginas, titulo, fecha_actualizacion, orden).
 -- Cómo usarlo: Supabase -> SQL Editor -> New query -> pegar -> Run.
 -- IMPORTANTE: confirma con Juan el modelo de embeddings ANTES de correrlo
 -- y cambia el 384 de la tabla chunk si el modelo usa otra dimensión.
@@ -26,6 +28,10 @@ create table documento (
   estado        text not null default 'pendiente'
                 check (estado in ('pendiente', 'procesando', 'listo', 'error')),
   fecha_carga   timestamptz not null default now(),
+  num_paginas   int,                          -- "48 págs." (pantalla de inicio / detalle)
+  progreso      int not null default 0
+                check (progreso between 0 and 100),   -- "Indexando 62%"
+  fecha_actualizacion timestamptz not null default now(),  -- "Actividad reciente"
   metadata      jsonb not null default '{}'::jsonb
 );
 
@@ -36,7 +42,7 @@ create table chunk (
   contenido    text not null,
   indice       int  not null,
   pagina       int,
-  metadata     jsonb not null default '{}'::jsonb,
+  metadata     jsonb not null default '{}'::jsonb,  -- p. ej. {"seccion": "4.2"} (pantalla de evidencia)
   embedding    vector(384),                   -- <-- la dimensión depende del modelo
   unique (documento_id, indice)
 );
@@ -45,7 +51,9 @@ create table chunk (
 create table conversacion (
   id             uuid primary key default gen_random_uuid(),
   usuario_id     uuid not null references usuario(id) on delete cascade,
-  fecha_creacion timestamptz not null default now()
+  titulo         text,                        -- "Vacaciones y permisos" (Historial)
+  fecha_creacion timestamptz not null default now(),
+  fecha_actualizacion timestamptz not null default now()   -- fecha que muestra el Historial
 );
 
 -- 5) MENSAJE ----------------------------------------------------------
@@ -62,7 +70,8 @@ create table referencia_fuente (
   id         uuid primary key default gen_random_uuid(),
   mensaje_id uuid not null references mensaje(id) on delete cascade,
   chunk_id   uuid not null references chunk(id) on delete cascade,
-  similitud  real
+  similitud  real,                            -- "Relevancia 94%" (el mockup la muestra)
+  orden      int                              -- "Fuente 1", "Fuente 2"
 );
 
 -- Índices -------------------------------------------------------------
