@@ -9,3 +9,8 @@ App/tests/
 venv
 **/venv/*
 **/__pycache__/*
+# Secretos y entornos
+.env
+.env.*
+!.env.example
+.venv
