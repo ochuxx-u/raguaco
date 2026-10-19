@@ -14,10 +14,11 @@ repositorio pueda mapear la columna sin sorpresas.
 
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 
 from domain.models.base import ModeloBase
 
@@ -70,6 +71,38 @@ class Documento(ModeloBase):
         validation_alias=AliasChoices('metadatos', 'metadata'),
         description='Metadatos libres del documento (columna `metadata` en base de datos)',
     )
+
+    @model_validator(mode='before')
+    @classmethod
+    def _reconocer_datos_desde_la_ruta(cls, data: Any) -> Any:
+        """Deriva `nombre` y `formato` a partir de `ruta_original`.
+
+        Permite registrar un documento indicando solo la ruta del archivo: el
+        servidor reconoce el nombre y el formato a partir de ella. Si el cliente
+        los envía, se respetan.
+
+        También exige que la ruta incluya la extensión del archivo, porque de ella
+        depende `formato` (un documento sin formato no se puede procesar).
+        """
+        if not isinstance(data, dict):
+            return data
+
+        ruta = data.get('ruta_original')
+        if not isinstance(ruta, str) or not ruta.strip():
+            return data
+
+        base = Path(ruta)
+        if not base.suffix:
+            raise ValueError(
+                'La ruta del archivo debe incluir su extensión (por ejemplo, /docs/manual.pdf)'
+            )
+
+        data = dict(data)
+        if not data.get('nombre'):
+            data['nombre'] = base.name
+        if not data.get('formato'):
+            data['formato'] = base.suffix.lstrip('.').lower()
+        return data
 
     def iniciar_procesamiento(self) -> None:
         """Marca el documento como en procesamiento (inicio del pipeline de ingesta)."""
