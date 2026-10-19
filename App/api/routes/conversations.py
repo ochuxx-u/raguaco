@@ -1,9 +1,9 @@
 """Rutas de conversaciones.
 
-Conectan la API con la entidad de dominio `Conversacion`
-(`domain/models/conversacion.py`). El servidor es dueño del `id` y de la
-`fecha_creacion` (siempre en UTC); el cliente solo indica a qué usuario
-pertenece la conversación.
+Conectan la API con las entidades de dominio `Conversacion` y `Mensaje`
+(`domain/models/conversacion.py`, `domain/models/mensaje.py`). El servidor es
+dueño del `id` y de las fechas (siempre en UTC); el cliente solo indica a qué
+usuario pertenece la conversación y qué dice cada mensaje.
 """
 
 from datetime import datetime, timezone
@@ -13,6 +13,7 @@ from uuid import UUID
 from fastapi import APIRouter, Body, HTTPException, Path, status
 
 from domain.models.conversacion import Conversacion
+from domain.models.mensaje import Mensaje
 
 router = APIRouter(prefix='/v1/models/conversations', tags=['conversations'])
 
@@ -20,6 +21,22 @@ router = APIRouter(prefix='/v1/models/conversations', tags=['conversations'])
 # TODO: reemplazar por ConversacionRepository (infrastructure/db/repositories)
 # inyectado con Depends(get_db).
 _CONVERSACIONES: dict[UUID, Conversacion] = {}
+
+# Historial de mensajes, agrupado por conversación.
+# TODO: reemplazar por MensajeRepository (infrastructure/db/repositories).
+_MENSAJES: dict[UUID, list[Mensaje]] = {}
+
+
+class MensajePeticion(Mensaje):
+    """Cuerpo de la petición de un mensaje.
+
+    Es la entidad `Mensaje` con una única diferencia: `conversacion_id` es
+    opcional porque la conversación sale de la ruta
+    (`/{conversacion_id}/messages`), no del cuerpo. El `id` y la `fecha` los
+    asigna el servidor en UTC.
+    """
+
+    conversacion_id: UUID | None = None
 
 
 @router.get(
@@ -87,3 +104,78 @@ async def get_conversation(
             detail=f'No existe una conversación con el id {conversacion_id}',
         )
     return conversacion
+
+
+@router.post(
+    '/{conversacion_id}/messages',
+    response_model=Mensaje,
+    status_code=status.HTTP_201_CREATED,
+    summary='Crear un mensaje',
+    description=(
+        'Agrega un mensaje a la conversación. La conversación sale de la ruta y el '
+        '`id` y la `fecha` los asigna el servidor en UTC: los que vengan en el cuerpo '
+        'se ignoran.'
+    ),
+    responses={
+        404: {'description': 'No existe una conversación con ese identificador'},
+        422: {'description': 'El identificador o el mensaje no son válidos'},
+    },
+)
+async def create_message(
+    conversacion_id: Annotated[
+        UUID,
+        Path(description='Identificador de la conversación'),
+    ],
+    payload: Annotated[
+        MensajePeticion,
+        Body(
+            openapi_examples={
+                'valido': {
+                    'summary': 'Mensaje válido',
+                    'value': {'rol': 'usuario', 'contenido': '¿Cuántos días de vacaciones me corresponden?'},
+                }
+            }
+        ),
+    ],
+) -> Mensaje:
+    if conversacion_id not in _CONVERSACIONES:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No existe una conversación con el id {conversacion_id}',
+        )
+
+    mensaje = Mensaje(
+        conversacion_id=conversacion_id,
+        rol=payload.rol,
+        contenido=payload.contenido,
+        fecha=datetime.now(timezone.utc),
+    )
+    _MENSAJES.setdefault(conversacion_id, []).append(mensaje)
+    return mensaje
+
+
+@router.get(
+    '/{conversacion_id}/messages',
+    response_model=list[Mensaje],
+    summary='Obtener los mensajes de una conversación',
+    description=(
+        'Devuelve el historial de mensajes de la conversación, del más antiguo al más '
+        'reciente. Si la conversación todavía no tiene mensajes, devuelve una lista vacía.'
+    ),
+    responses={
+        404: {'description': 'No existe una conversación con ese identificador'},
+        422: {'description': 'El identificador no es un UUID válido'},
+    },
+)
+async def list_messages(
+    conversacion_id: Annotated[
+        UUID,
+        Path(description='Identificador de la conversación'),
+    ],
+) -> list[Mensaje]:
+    if conversacion_id not in _CONVERSACIONES:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No existe una conversación con el id {conversacion_id}',
+        )
+    return sorted(_MENSAJES.get(conversacion_id, []), key=lambda m: m.fecha)
