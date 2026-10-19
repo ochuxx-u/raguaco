@@ -15,7 +15,7 @@ from fastapi import APIRouter, Body, HTTPException, Path, Query, Response, statu
 
 from domain.models.documento import Documento, EstadoDocumento
 
-router = APIRouter(prefix='/api/v1/documents', tags=['documents'])
+router = APIRouter(prefix='/v1/models/documents', tags=['documents'])
 
 # Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
 # TODO: reemplazar por DocumentoRepository (infrastructure/db/repositories)

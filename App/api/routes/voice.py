@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-router = APIRouter(prefix='/api/v1/voice', tags=['voice'])
+router = APIRouter(prefix='/v1/voice', tags=['voice'])
 
 @router.get('/')
 async def voice():

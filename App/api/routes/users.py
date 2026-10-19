@@ -6,7 +6,7 @@ from pydantic import EmailStr
 
 from domain.models.usuario import Usuario
 
-router = APIRouter(prefix='/api/v1/users', tags=['users'])
+router = APIRouter(prefix='/v1/models/users', tags=['users'])
 
 # Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
 # TODO: reemplazar por UsuarioRepository (infrastructure/db/repositories) inyectado con Depends(get_db).

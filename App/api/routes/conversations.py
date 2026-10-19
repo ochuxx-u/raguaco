@@ -14,7 +14,7 @@ from fastapi import APIRouter, Body, HTTPException, Path, status
 
 from domain.models.conversacion import Conversacion
 
-router = APIRouter(prefix='/api/v1/conversations', tags=['conversations'])
+router = APIRouter(prefix='/v1/models/conversations', tags=['conversations'])
 
 # Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
 # TODO: reemplazar por ConversacionRepository (infrastructure/db/repositories)
