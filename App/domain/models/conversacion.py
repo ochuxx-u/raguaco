@@ -15,7 +15,7 @@ from domain.models.base import ModeloBase
 
 
 class Conversacion(ModeloBase):
-    """Conversación mantenida entre un usuario y el asistente (RF10)."""
+    """Conversación mantenida entre un usuario y el asistente."""
 
     id: UUID = Field(default_factory=uuid4, description='Identificador único de la conversación')
     usuario_id: UUID = Field(description='Usuario dueño de la conversación')

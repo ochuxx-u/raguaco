@@ -1,38 +1,60 @@
 from typing import Annotated
-from fastapi import APIRouter, Body, HTTPException, status
-from domain.schemas.users import UserCreate, UserRead
+from uuid import UUID, uuid4
+
+from fastapi import APIRouter, Body, HTTPException, Query, status
+from pydantic import EmailStr
+
+from domain.models.usuario import Usuario
 
 router = APIRouter(prefix='/api/v1/users', tags=['users'])
 
 # Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
 # TODO: reemplazar por UsuarioRepository (infrastructure/db/repositories) inyectado con Depends(get_db).
-_USERS: dict[int, UserRead] = {}
-_next_id = 1
+_USERS: dict[UUID, Usuario] = {}
 
 
 @router.get(
     '/',
-    response_model=list[UserRead],
-    summary='Listar usuarios',
-    description='Devuelve todos los usuarios registrados.',
+    response_model=Usuario,
+    summary='Buscar usuario por email',
+    description='Devuelve el usuario cuyo email coincide con el indicado.',
+    responses={
+        404: {'description': 'No existe un usuario con ese email'},
+        422: {'description': 'El email no tiene un formato válido'},
+    },
 )
-async def users() -> list[UserRead]:
-    return list(_USERS.values())
+async def get_user(
+    email: Annotated[
+        EmailStr,
+        Query(description='Email del usuario a buscar'),
+    ],
+) -> Usuario:
+    target = email.lower()
+    for usuario in _USERS.values():
+        if usuario.email.lower() == target:
+            return usuario
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f'No existe un usuario con el email {email}',
+    )
 
 
 @router.post(
     '/',
-    response_model=UserRead,
+    response_model=Usuario,
     status_code=status.HTTP_201_CREATED,
     summary='Registrar un usuario',
-    description='Da de alta un usuario. El `email` debe ser único.',
+    description=(
+        'Da de alta un usuario. El `email` debe ser único. '
+        'El `id` lo asigna el servidor: el que venga en el cuerpo se ignora.'
+    ),
     responses={
         409: {'description': 'El email ya está registrado'}
     },
 )
 async def create_user(
     payload: Annotated[
-        UserCreate,
+        Usuario,
         Body(
             openapi_examples={
                 'valido': {
@@ -42,17 +64,14 @@ async def create_user(
             }
         ),
     ],
-) -> UserRead:
-    global _next_id
-    
+) -> Usuario:
     email = payload.email.lower()
-    if any(user.email.lower() == email for user in _USERS.values()):
+    if any(usuario.email.lower() == email for usuario in _USERS.values()):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f'El email {payload.email} ya está registrado',
         )
-    
-    user = UserRead(id=_next_id, nombre=payload.nombre, email=email)
-    _USERS[_next_id] = user
-    _next_id += 1
-    return user
+
+    usuario = Usuario(id=uuid4(), nombre=payload.nombre, email=email)
+    _USERS[usuario.id] = usuario
+    return usuario

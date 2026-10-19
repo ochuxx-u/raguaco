@@ -4,7 +4,7 @@ Relaciones (diagrama de clases / entidad-relación):
 
 - `Usuario` 1 --- 0..* `Documento`
 - `Documento` 1 --- 0..* `Chunk`
-- `Documento` --> `EstadoDocumento` (el estado del pipeline de ingesta, RF4)
+- `Documento` --> `EstadoDocumento`
 
 Nota de nomenclatura: el diagrama de clases llama a este campo `metadata` y el
 diagrama entidad-relación usa la columna `metadata`. En Python el atributo se llama
@@ -23,7 +23,7 @@ from domain.models.base import ModeloBase
 
 
 class EstadoDocumento(str, Enum):
-    """Estado del documento dentro del pipeline de ingesta (RF2, RF4)."""
+    """Estado del documento dentro del pipeline de ingesta."""
 
     PENDIENTE = 'pendiente'
     PROCESANDO = 'procesando'

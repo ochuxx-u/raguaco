@@ -42,6 +42,10 @@ En esta sección se recopilan los diagramas UML y de arquitectura del sistema **
 
 A continuación se presenta el orden de carpetas y archivos que tendrá la aplicación:
 
+> La API expone los modelos de dominio (`domain/models`) directamente: no hay una
+> capa de DTO (`schemas`) intermedia. Los servicios de `domain/services` son los que
+> traducen entre la entidad y el exterior cuando haga falta.
+
 ```text
 rag_app/
 ├── app/
@@ -60,7 +64,6 @@ rag_app/
 │   │   └── exceptions.py
 │   ├── domain/
 │   │   ├── models/
-│   │   ├── schemas/
 │   │   └── services/
 │   │       ├── document_ingestion_service.py
 │   │       ├── rag_service.py

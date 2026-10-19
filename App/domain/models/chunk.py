@@ -18,7 +18,7 @@ from domain.models.base import ModeloBase
 
 
 class Chunk(ModeloBase):
-    """Fragmento de un documento, listo para ser indexado como vector (RF2, RF3)."""
+    """Fragmento de un documento, listo para ser indexado como vector."""
 
     id: UUID = Field(default_factory=uuid4, description='Identificador único del fragmento')
     documento_id: UUID = Field(description='Documento al que pertenece el fragmento')

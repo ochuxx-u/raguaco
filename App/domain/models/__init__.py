@@ -3,7 +3,8 @@
 Entidades del diagrama de clases (`Docs/UML/imagenes/Diagrama_Clases.png`) y del
 diagrama entidad-relación (`Docs/UML/imagenes/diagrama entidad relacion.png`).
 
-Estos modelos representan el dominio; los DTO de la API viven en `domain/schemas`.
+Estos modelos representan el dominio; la API los expone directamente, sin una capa
+de DTO propia.
 
     from domain.models import Documento, EstadoDocumento
 """

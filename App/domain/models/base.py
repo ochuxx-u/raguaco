@@ -1,8 +1,8 @@
 """Configuración común de los modelos de dominio.
 
 Las entidades de `domain/models` son la representación *del dominio* (el diagrama de
-clases y el diagrama entidad-relación). Las de `domain/schemas` son los DTO que
-viajan por la API. Esta clase base solo define comportamiento transversal para no
+clases y el diagrama entidad-relación). La API las expone directamente: no hay una
+capa de DTO aparte. Esta clase base solo define comportamiento transversal para no
 repetir configuración en cada entidad.
 """
 
