@@ -60,11 +60,6 @@ rag_app/
 │   │   └── exceptions.py
 │   ├── domain/
 │   │   ├── models/
-│   │   │   ├── usuario.py
-│   │   │   ├── documento.py
-│   │   │   ├── chunk.py
-│   │   │   ├── conversacion.py
-│   │   │   └── mensaje.py
 │   │   ├── schemas/
 │   │   └── services/
 │   │       ├── document_ingestion_service.py
