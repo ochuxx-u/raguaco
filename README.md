@@ -14,6 +14,9 @@ Para iniciar el servidor de Raguaco es necesario:
 cd App && uvicorn main:app
 ```
 
+### Iniciar aplicación (frontend)
+Para iniciar el apartado visual (lado del cliente) ver [aquí](frontend/README.md).
+
 ### Descargar voz para el TTS (Kokoro)
 
 Descargar modelo de voz Kokoro-82M desde HuggingFace
