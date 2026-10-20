@@ -1,10 +1,7 @@
+import LandingPage from './pages/LandingPage.jsx'
+
 function App() {
-  return (
-    <main>
-      <h1>RAGUACO AI</h1>
-      <p>Frontend en construcción.</p>
-    </main>
-  )
+  return <LandingPage />
 }
 
 export default App

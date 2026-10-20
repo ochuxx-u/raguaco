@@ -1,0 +1,46 @@
+/* Tokens visuales globales — FRONTEND_SPEC §5 */
+:root {
+  /* Colores */
+  --color-bg: #0F172A;
+  --color-bg-glow: radial-gradient(ellipse at 75% 30%, #1E3A8A 0%, #0F172A 60%);
+  --color-surface: #1E293B;
+  --color-surface-deep: #1E3A8A;
+  --color-border: #334155;
+  --color-text: #F8FAFC;
+  --color-text-muted: #CBD5E1;
+  --color-primary: #2563EB;
+  --color-interactive: #3B82F6;
+  --color-accent: #22D3EE;
+  --color-danger: #FF8A80;
+  --color-danger-bg: #2A1215;
+  --color-danger-border: #5C2B2E;
+  --color-status-error: #FB923C;
+
+  /* Tipografía */
+  --font-family: "Manrope", system-ui, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-extrabold: 800;
+  --font-size-12: 12px;
+  --font-size-13: 13px;
+  --font-size-14: 14px;
+  --font-size-15: 15px;
+  --font-size-16: 16px;
+  --font-size-18: 18px;
+  --font-size-24: 24px;
+  --font-size-34: 34px;
+  --font-size-72: 72px;
+
+  /* Radios */
+  --radius-button: 12px;
+  --radius-card: 16px;
+  --radius-file-icon: 11px;
+  --radius-logo: 9px;
+  --radius-pill: 99px;
+
+  /* Glows y sombras */
+  --shadow-primary: 0 0 28px rgba(59, 130, 246, 0.6);
+  --shadow-logo: 0 0 18px rgba(34, 211, 238, 0.5);
+  --shadow-floating-card: 0 20px 40px rgba(0, 0, 0, 0.4);
+  --shadow-voice-card: 0 0 30px rgba(59, 130, 246, 0.6);
+}
