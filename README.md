@@ -14,6 +14,36 @@ Para iniciar el servidor de Raguaco es necesario:
 cd App && uvicorn main:app
 ```
 
+### Descargar voz para el TTS (Kokoro)
+
+Descargar modelo de voz Kokoro-82M desde HuggingFace
+```
+# Haber descargado previamente los requirements.txt
+hf download onnx-community/Kokoro-82M-v1.0-ONNX --local-dir App/ai-models
+```
+
+Debe crearse la ruta `./App/ai-models/`
+
+> [!WARNING]
+> Instalar las extensiones de su OS para la fonética en español
+```
+# Linux
+sudo apt install espeak-ng ffmpeg
+
+# Windows
+winget install Gyan.FFmpeg
+winget install eSpeak-NG.eSpeak-NG
+
+# macOS
+brew install espeak-ng ffmpeg
+```
+
+> [!NOTE]
+> En Windows también puedes instalar `espeak-ng` con [Scoop](https://scoop.sh/):
+```
+scoop install main/espeak-ng
+```
+
 
 - [Requerimientos funcionales y no funcionales](Docs/Requerimientos/RF%20-%20RNF.md)
 - [Diagramas UML](Docs/DIAGRAMS.md)
