@@ -1,0 +1,120 @@
+.floating-user {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+}
+
+.floating-user__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: var(--color-text);
+  background-color: var(--color-surface-deep);
+  border: 1px solid var(--color-interactive);
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.floating-user__button:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-primary);
+}
+
+.floating-user__button svg {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.floating-user__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  width: 240px;
+  padding: 8px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-floating-card);
+}
+
+.floating-user__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.floating-user__avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--color-text);
+  background-color: var(--color-surface-deep);
+  border: 1px solid var(--color-interactive);
+  border-radius: 50%;
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.floating-user__identity {
+  min-width: 0;
+}
+
+.floating-user__name {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+}
+
+.floating-user__email {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  overflow-wrap: anywhere;
+}
+
+.floating-user__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+}
+
+.floating-user__action {
+  width: 100%;
+  padding: 9px 10px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  text-align: left;
+  border-radius: var(--radius-button);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.floating-user__action:hover {
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+@media (max-width: 767px) {
+  .floating-user {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .floating-user__menu {
+    width: min(240px, calc(100vw - 32px));
+  }
+}

@@ -1,11 +1,18 @@
 import './LandingPage.css'
 
-const navItems = ['Dashboard', 'Documentos', 'Chat', 'Historial', 'Voz']
+const navItems = [
+  { label: 'Dashboard', view: 'dashboard' },
+  { label: 'Documentos', view: 'documents' },
+  { label: 'Chat', view: 'chat' },
+  { label: 'Historial', view: 'history' },
+  { label: 'Voz', view: 'voice' },
+]
 const pipelineSteps = ['Upload', 'Process', 'Vectorize', 'Retrieve', 'Respond']
 
-function LandingPage() {
-  const handlePlaceholderLink = (event) => {
+function LandingPage({ onNavigate = () => {} }) {
+  const handleNavigation = (event, view) => {
     event.preventDefault()
+    onNavigate(view)
   }
 
   return (
@@ -35,7 +42,7 @@ function LandingPage() {
           className="landing__brand"
           href="#"
           aria-label="RAGUACO AI — Inicio"
-          onClick={handlePlaceholderLink}
+          onClick={(event) => handleNavigation(event, 'landing')}
         >
           <span className="landing__logo-mark" aria-hidden="true" />
           <span>
@@ -48,10 +55,10 @@ function LandingPage() {
             <a
               className="landing__nav-link"
               href="#"
-              key={item}
-              onClick={handlePlaceholderLink}
+              key={item.view}
+              onClick={(event) => handleNavigation(event, item.view)}
             >
-              {item}
+              {item.label}
             </a>
           ))}
         </nav>
@@ -78,7 +85,11 @@ function LandingPage() {
           </p>
 
           <div className="landing__actions">
-            <button className="landing__button landing__button--primary" type="button">
+            <button
+              className="landing__button landing__button--primary"
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+            >
               Comenzar ahora
             </button>
             <button className="landing__button landing__button--secondary" type="button">
