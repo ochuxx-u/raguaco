@@ -4,6 +4,9 @@
 
 **Raguaco** es un sistema RAG (*Retrieval-Augmented Generation*) conversacional que permite cargar documentos, procesarlos automáticamente y responder preguntas en lenguaje natural apoyándose en la información recuperada, con fuentes verificables e **interacción por voz**.
 
+Conoce más acerca de Raguaco:
+**[Misión, visión y origen](Docs/MISION_Y_VISION.md)**.
+
 ## Documentación
 
 ### Inciar aplicación (backend)
