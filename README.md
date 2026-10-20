@@ -44,7 +44,7 @@ brew install espeak-ng ffmpeg
 scoop install main/espeak-ng
 ```
 
-
+### Docs iniciales
 - [Requerimientos funcionales y no funcionales](Docs/Requerimientos/RF%20-%20RNF.md)
 - [Diagramas UML](Docs/DIAGRAMS.md)
 
