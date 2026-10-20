@@ -9,4 +9,5 @@ kokoro-onnx
 onnxruntime
 soundfile
 huggingface_hub
+tokenizers
 pip-audit

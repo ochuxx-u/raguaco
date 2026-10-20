@@ -46,9 +46,15 @@ A continuación se presenta el orden de carpetas y archivos que tendrá la aplic
 > capa de DTO (`schemas`) intermedia. Los servicios de `domain/services` son los que
 > traducen entre la entidad y el exterior cuando haga falta.
 
+> `app/ai-models/` es el apartado donde se guardarán los modelos locales que son
+> parte del proyecto (pesos, checkpoints y archivos de configuración asociados),
+> de forma que puedan versionarse junto al código y servirse en tiempo de ejecución
+> sin depender de una descarga externa. Se ubica al lado de `api/` porque es un
+> recurso de la aplicación que el backend carga para inferencia.
+
 ```text
 rag_app/
-├── app/
+├── App/
 │   ├── main.py
 │   ├── api/
 │   │   ├── deps.py
@@ -58,6 +64,7 @@ rag_app/
 │   │       ├── conversations.py
 │   │       ├── users.py
 │   │       └── voice.py
+│   ├── ai-models/
 │   ├── core/
 │   │   ├── config.py
 │   │   ├── logging.py
@@ -89,7 +96,6 @@ rag_app/
 │── frontend/
 ├── migrations/
 ├── scripts/
-├── docker/
 ├── requirements.txt
 ├── .env.example
 └── README.md
