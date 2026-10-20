@@ -25,7 +25,7 @@ hf download onnx-community/Kokoro-82M-v1.0-ONNX --local-dir App/ai-models
 Debe crearse la ruta `./App/ai-models/`
 
 > [!WARNING]
-> Instalar las extensiones de su OS para la fonética en español
+> Instalar las extensiones necesarios en su SO para la fonética en español
 ```
 # Linux
 sudo apt install espeak-ng ffmpeg
