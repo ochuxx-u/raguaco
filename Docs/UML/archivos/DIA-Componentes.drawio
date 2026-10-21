@@ -1,6 +1,6 @@
 <mxfile host="Electron">
   <diagram name="Page-1" id="6dlTgUl8TiZw99Or4Rm6">
-    <mxGraphModel dx="1664" dy="993" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1178" dy="704" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -52,6 +52,11 @@
         <UserObject label="DocumentIngestionService" mermaidId="n:DIS" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="DocumentIngestionService" id="gJROjV18Pxpjmv27Nzqg-8">
           <mxCell parent="gJROjV18Pxpjmv27Nzqg-7" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
             <mxGeometry height="54" width="251" x="36" y="45" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="core/config/Settings" mermaidId="n:DIS" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="DocumentIngestionService" id="BGbj102aMlvvss3vTHGg-1">
+          <mxCell parent="gJROjV18Pxpjmv27Nzqg-7" style="html=1;whiteSpace=wrap;strokeWidth=1;fillColor=light-dark(#ECECFF,#1f2020);strokeColor=light-dark(#9370DB,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" vertex="1">
+            <mxGeometry height="54" width="167" x="678" y="262" as="geometry" />
           </mxCell>
         </UserObject>
         <UserObject label="&lt;font style=&quot;font-size: 18px;&quot;&gt;Servicios de Dominio&lt;/font&gt;" mermaidId="n:Dominio" mermaidBaseStyle="html=1;whiteSpace=wrap;strokeWidth=1;verticalAlign=top;fillColor=light-dark(#ffffde,#1f2020);strokeColor=light-dark(#aaaa33,#cccccc);fontColor=light-dark(#333333,#cccccc);fontFamily=Trebuchet MS,Verdana,Arial,sans-serif;fontSize=16;" mermaidBaseValue="Servicios de Dominio" id="gJROjV18Pxpjmv27Nzqg-14">
@@ -272,9 +277,9 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="gJROjV18Pxpjmv27Nzqg-52" edge="1" parent="gJROjV18Pxpjmv27Nzqg-1" source="gJROjV18Pxpjmv27Nzqg-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;" target="gJROjV18Pxpjmv27Nzqg-9">
-          <mxGeometry relative="1" as="geometry">
+          <mxGeometry relative="1" x="-0.0636" as="geometry">
             <Array as="points">
-              <mxPoint x="1950" y="256" />
+              <mxPoint x="1950" y="280" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -347,6 +352,26 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="821" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <UserObject label="" mermaidId="e:FastAPI-&gt;Voice#0" mermaidBaseStyle="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);exitX=1;exitY=0.65;entryX=0.5;entryY=0;" mermaidBaseValue="" id="BGbj102aMlvvss3vTHGg-2">
+          <mxCell edge="1" parent="gJROjV18Pxpjmv27Nzqg-1" source="gJROjV18Pxpjmv27Nzqg-6" style="curved=1;startArrow=none;endArrow=block;endSize=7;strokeColor=light-dark(#333333,#cccccc);rounded=0;" target="BGbj102aMlvvss3vTHGg-1">
+            <mxGeometry relative="1" x="-0.4083" as="geometry">
+              <Array as="points">
+                <mxPoint x="2040" y="290" />
+                <mxPoint x="2060" y="360" />
+                <mxPoint x="2050" y="450" />
+              </Array>
+              <mxPoint x="2010" y="320" as="sourcePoint" />
+              <mxPoint x="2420" y="466" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </UserObject>
+        <mxCell id="BGbj102aMlvvss3vTHGg-3" edge="1" parent="gJROjV18Pxpjmv27Nzqg-1" source="BGbj102aMlvvss3vTHGg-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gJROjV18Pxpjmv27Nzqg-24">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2125.5" y="910" />
             </Array>
           </mxGeometry>
         </mxCell>
