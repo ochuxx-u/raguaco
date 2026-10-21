@@ -1,16 +1,14 @@
 from typing import Annotated
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
+from psycopg.errors import UniqueViolation
 from pydantic import EmailStr
 
+from api.deps import UsuarioRepositoryDep
 from domain.models.usuario import Usuario
 
 router = APIRouter(prefix='/v1/models/users', tags=['users'])
-
-# Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
-# TODO: reemplazar por UsuarioRepository (infrastructure/db/repositories) inyectado con Depends(get_db).
-_USERS: dict[UUID, Usuario] = {}
 
 
 @router.get(
@@ -24,19 +22,19 @@ _USERS: dict[UUID, Usuario] = {}
     },
 )
 async def get_user(
+    repo: UsuarioRepositoryDep,
     email: Annotated[
         EmailStr,
         Query(description='Email del usuario a buscar'),
     ],
 ) -> Usuario:
-    target = email.lower()
-    for usuario in _USERS.values():
-        if usuario.email.lower() == target:
-            return usuario
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f'No existe un usuario con el email {email}',
-    )
+    usuario = await repo.get_by_email(email)
+    if usuario is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No existe un usuario con el email {email}',
+        )
+    return usuario
 
 
 @router.post(
@@ -53,6 +51,7 @@ async def get_user(
     },
 )
 async def create_user(
+    repo: UsuarioRepositoryDep,
     payload: Annotated[
         Usuario,
         Body(
@@ -66,12 +65,19 @@ async def create_user(
     ],
 ) -> Usuario:
     email = payload.email.lower()
-    if any(usuario.email.lower() == email for usuario in _USERS.values()):
+    if await repo.get_by_email(email) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f'El email {payload.email} ya está registrado',
         )
 
     usuario = Usuario(id=uuid4(), nombre=payload.nombre, email=email)
-    _USERS[usuario.id] = usuario
-    return usuario
+    try:
+        return await repo.create(usuario)
+    except UniqueViolation as exc:
+        # Otra petición pudo registrar el mismo email entre la consulta y el
+        # insert; la restricción unique de la base sigue siendo la fuente de verdad.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f'El email {payload.email} ya está registrado',
+        ) from exc

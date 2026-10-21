@@ -11,7 +11,7 @@ Two independent apps, no root manifest or workspace tooling:
 
 ## Commands
 
-- Backend: `cd App && uvicorn main:app` (interactive docs at `/docs`).
+- Backend: `cd App && uvicorn main:app` (interactive docs at `/docs`). Requires PostgreSQL running and `DATABASE_URL` configured in `.env` (local setup: `Docs/Tests/TESTING_PGVECTOR.md`).
 - Frontend: `cd frontend && npm install && npm run dev` (also `build`, `preview`). Requires Node `^20.19.0` or `>=22.12.0` (Vite 8).
 - **No lint, typecheck, test, or CI tooling exists** — don't invent workflows or "fix" their absence. `pip-audit` in `requirements.txt` is for dependency auditing.
 - AI models are not in git (`App/ai-models/` is gitignored); download per README via `hf download`: Kokoro-82M TTS and `multilingual-e5-small` embeddings. TTS needs system `espeak-ng` + `ffmpeg` (Spanish phonetics).
@@ -19,9 +19,9 @@ Two independent apps, no root manifest or workspace tooling:
 ## Backend layout & quirks
 
 - **Work as if `App/` were the Python project root**: start shells with `cd App`; imports are `from api.routes...` / `from domain.models...` (no `__init__.py` in `api/`; uvicorn resolves them from cwd).
-- Target structure is `Docs/DIAGRAMS.md` → "Estructura de rutas" (`core/`, `domain/services/`, `infrastructure/` …). Today only `api/routes/`, `domain/models/`, `migrations/` exist. Follow the planned layout when adding layers (RNF1: modular, replaceable components).
+- Target structure is `Docs/DIAGRAMS.md` → "Estructura de rutas" (`core/`, `domain/services/`, `infrastructure/` …). `core/`, `infrastructure/db/repositories/`, `api/routes/`, `domain/models/` and `migrations/` already exist. Follow the planned layout when adding layers (RNF1: modular, replaceable components).
 - **Path quirk**: most routers mount under `/v1/models/<resource>` (`/v1/models/documents`, `/v1/models/conversations`, `/v1/models/users`); only `queries` (`/v1/queries`) and `voice` (`/v1/voice`) differ. Don't "fix" or guess these prefixes.
-- Persistence is temporary in-memory dicts per route module (`_DOCUMENTOS`, `_CONVERSACIONES`, `_MENSAJES`, `_USERS`) with TODOs to swap for repositories + `Depends(get_db)`; `api/deps.py` is currently empty. Data is lost on restart.
+- Persistence goes through repositories in `infrastructure/db/repositories/` over PostgreSQL, injected with `Depends` from `api/deps.py`. `api/deps.py` provides `get_db` (one `psycopg` async connection per request from the pool in `infrastructure/db/session.py`) and the repository providers. `DATABASE_URL` comes from `.env` or the environment; the pool opens in the FastAPI lifespan and startup fails if the DB is unreachable.
 - Domain models (`domain/models/`) are Pydantic with Spanish class names (`Documento`, `Usuario`, …) and are returned directly from endpoints — **there is no DTO/schemas layer** by design (see `Docs/DIAGRAMS.md`). `ModeloBase` sets `from_attributes`/`validate_assignment`/`populate_by_name`. `Documento.metadatos` accepts `metadata` as alias (matches the DB column).
 - DB schema: `App/migrations/001_schema.sql` is **pasted manually into the Supabase SQL Editor** — there is no migration runner. `chunk.embedding vector(384)` must match the embedding model's dimension.
 

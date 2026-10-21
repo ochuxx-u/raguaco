@@ -5,6 +5,7 @@ pydantic-settings
 pydantic[email]
 python-dotenv
 python-multipart
+psycopg[binary,pool]
 kokoro-onnx
 onnxruntime
 soundfile

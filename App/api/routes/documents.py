@@ -1,7 +1,8 @@
 """Rutas de documentos.
 
 Conectan la API con la entidad de dominio `Documento`
-(`domain/models/documento.py`). El cliente solo indica la ruta del archivo
+(`domain/models/documento.py`) y con la tabla `documento` de PostgreSQL a
+través de `DocumentoRepository`. El cliente solo indica la ruta del archivo
 cargado; el servidor reconoce el resto de los datos (nombre y formato) y
 asigna los que le corresponden (`id`, `fecha_carga`, `estado`).
 """
@@ -12,15 +13,12 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, Response, status
+from psycopg.errors import ForeignKeyViolation
 
+from api.deps import DocumentoRepositoryDep
 from domain.models.documento import Documento, EstadoDocumento
 
 router = APIRouter(prefix='/v1/models/documents', tags=['documents'])
-
-# Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
-# TODO: reemplazar por DocumentoRepository (infrastructure/db/repositories)
-# inyectado con Depends(get_db).
-_DOCUMENTOS: dict[UUID, Documento] = {}
 
 
 @router.get(
@@ -30,15 +28,13 @@ _DOCUMENTOS: dict[UUID, Documento] = {}
     description='Devuelve los documentos registrados, de la más reciente a la más antigua.',
 )
 async def list_documents(
+    repo: DocumentoRepositoryDep,
     usuario_id: Annotated[
         UUID | None,
         Query(description='Si se indica, devuelve solo los documentos de ese usuario'),
     ] = None,
 ) -> list[Documento]:
-    documentos = _DOCUMENTOS.values()
-    if usuario_id is not None:
-        documentos = [doc for doc in documentos if doc.usuario_id == usuario_id]
-    return sorted(documentos, key=lambda doc: doc.fecha_carga, reverse=True)
+    return await repo.list(usuario_id)
 
 
 @router.post(
@@ -53,11 +49,12 @@ async def list_documents(
         'cuerpo se ignoran.'
     ),
     responses={
-        404: {'description': 'No existe ningún archivo en la ruta indicada'},
+        404: {'description': 'No existe el archivo o el usuario indicado'},
         422: {'description': 'La ruta no incluye la extensión del archivo'},
     },
 )
 async def create_document(
+    repo: DocumentoRepositoryDep,
     payload: Annotated[
         Documento,
         Body(
@@ -65,7 +62,7 @@ async def create_document(
                 'valida': {
                     'summary': 'Registro válido',
                     'value': {
-                        'usuario_id': '8b1c0f4e-2a7d-4d6f-9c3b-5e8a1d2f7a10',
+                        'usuario_id': '00000000-0000-4000-8000-000000000001',
                         'ruta_original': '/docs/manual_politicas.pdf',
                     },
                 }
@@ -90,8 +87,13 @@ async def create_document(
         fecha_carga=datetime.now(timezone.utc),
         metadatos={**payload.metadatos, 'tamano_bytes': os.path.getsize(ruta)},
     )
-    _DOCUMENTOS[documento.id] = documento
-    return documento
+    try:
+        return await repo.create(documento)
+    except ForeignKeyViolation as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No existe un usuario con el id {payload.usuario_id}',
+        ) from exc
 
 
 @router.get(
@@ -105,12 +107,13 @@ async def create_document(
     },
 )
 async def get_document(
+    repo: DocumentoRepositoryDep,
     documento_id: Annotated[
         UUID,
         Path(description='Identificador del documento'),
     ],
 ) -> Documento:
-    documento = _DOCUMENTOS.get(documento_id)
+    documento = await repo.get(documento_id)
     if documento is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -130,15 +133,15 @@ async def get_document(
     },
 )
 async def delete_document(
+    repo: DocumentoRepositoryDep,
     documento_id: Annotated[
         UUID,
         Path(description='Identificador del documento'),
     ],
 ) -> Response:
-    if documento_id not in _DOCUMENTOS:
+    if not await repo.delete(documento_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No existe un documento con el id {documento_id}',
         )
-    del _DOCUMENTOS[documento_id]
     return Response(status_code=status.HTTP_204_NO_CONTENT)

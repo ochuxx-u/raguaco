@@ -1,30 +1,24 @@
 """Rutas de conversaciones.
 
 Conectan la API con las entidades de dominio `Conversacion` y `Mensaje`
-(`domain/models/conversacion.py`, `domain/models/mensaje.py`). El servidor es
-dueño del `id` y de las fechas (siempre en UTC); el cliente solo indica a qué
-usuario pertenece la conversación y qué dice cada mensaje.
+(`domain/models/conversacion.py`, `domain/models/mensaje.py`) y con las tablas
+`conversacion` y `mensaje` de PostgreSQL. El servidor es dueño del `id` y de
+las fechas (siempre en UTC); el cliente solo indica a qué usuario pertenece la
+conversación y qué dice cada mensaje.
 """
 
 from datetime import datetime, timezone
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Body, HTTPException, Path, status
+from psycopg.errors import ForeignKeyViolation
 
+from api.deps import ConversacionRepositoryDep, MensajeRepositoryDep
 from domain.models.conversacion import Conversacion
 from domain.models.mensaje import Mensaje
 
 router = APIRouter(prefix='/v1/models/conversations', tags=['conversations'])
-
-# Almacenamiento temporal en memoria para poder probar los endpoints desde /docs.
-# TODO: reemplazar por ConversacionRepository (infrastructure/db/repositories)
-# inyectado con Depends(get_db).
-_CONVERSACIONES: dict[UUID, Conversacion] = {}
-
-# Historial de mensajes, agrupado por conversación.
-# TODO: reemplazar por MensajeRepository (infrastructure/db/repositories).
-_MENSAJES: dict[UUID, list[Mensaje]] = {}
 
 
 class MensajePeticion(Mensaje):
@@ -45,8 +39,10 @@ class MensajePeticion(Mensaje):
     summary='Listar conversaciones',
     description='Devuelve todas las conversaciones registradas, de la más reciente a la más antigua.',
 )
-async def list_conversations() -> list[Conversacion]:
-    return sorted(_CONVERSACIONES.values(), key=lambda c: c.fecha_creacion, reverse=True)
+async def list_conversations(
+    repo: ConversacionRepositoryDep,
+) -> list[Conversacion]:
+    return await repo.list()
 
 
 @router.post(
@@ -59,26 +55,36 @@ async def list_conversations() -> list[Conversacion]:
         'El `id` y la `fecha_creacion` los asigna el servidor en UTC: '
         'los que vengan en el cuerpo se ignoran.'
     ),
+    responses={
+        404: {'description': 'No existe el usuario indicado'},
+    },
 )
 async def create_conversation(
+    repo: ConversacionRepositoryDep,
     payload: Annotated[
         Conversacion,
         Body(
             openapi_examples={
                 'valida': {
                     'summary': 'Creación válida',
-                    'value': {'usuario_id': '8b1c0f4e-2a7d-4d6f-9c3b-5e8a1d2f7a10'},
+                    'value': {'usuario_id': '00000000-0000-4000-8000-000000000001'},
                 }
             }
         ),
     ],
 ) -> Conversacion:
     conversacion = Conversacion(
+        id=uuid4(),
         usuario_id=payload.usuario_id,
         fecha_creacion=datetime.now(timezone.utc),
     )
-    _CONVERSACIONES[conversacion.id] = conversacion
-    return conversacion
+    try:
+        return await repo.create(conversacion)
+    except ForeignKeyViolation as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No existe un usuario con el id {payload.usuario_id}',
+        ) from exc
 
 
 @router.get(
@@ -92,12 +98,13 @@ async def create_conversation(
     },
 )
 async def get_conversation(
+    repo: ConversacionRepositoryDep,
     conversacion_id: Annotated[
         UUID,
         Path(description='Identificador de la conversación'),
     ],
 ) -> Conversacion:
-    conversacion = _CONVERSACIONES.get(conversacion_id)
+    conversacion = await repo.get(conversacion_id)
     if conversacion is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -122,6 +129,8 @@ async def get_conversation(
     },
 )
 async def create_message(
+    conversaciones: ConversacionRepositoryDep,
+    mensajes: MensajeRepositoryDep,
     conversacion_id: Annotated[
         UUID,
         Path(description='Identificador de la conversación'),
@@ -138,20 +147,20 @@ async def create_message(
         ),
     ],
 ) -> Mensaje:
-    if conversacion_id not in _CONVERSACIONES:
+    if await conversaciones.get(conversacion_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No existe una conversación con el id {conversacion_id}',
         )
 
     mensaje = Mensaje(
+        id=uuid4(),
         conversacion_id=conversacion_id,
         rol=payload.rol,
         contenido=payload.contenido,
         fecha=datetime.now(timezone.utc),
     )
-    _MENSAJES.setdefault(conversacion_id, []).append(mensaje)
-    return mensaje
+    return await mensajes.create(mensaje)
 
 
 @router.get(
@@ -168,14 +177,16 @@ async def create_message(
     },
 )
 async def list_messages(
+    conversaciones: ConversacionRepositoryDep,
+    mensajes: MensajeRepositoryDep,
     conversacion_id: Annotated[
         UUID,
         Path(description='Identificador de la conversación'),
     ],
 ) -> list[Mensaje]:
-    if conversacion_id not in _CONVERSACIONES:
+    if await conversaciones.get(conversacion_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No existe una conversación con el id {conversacion_id}',
         )
-    return sorted(_MENSAJES.get(conversacion_id, []), key=lambda m: m.fecha)
+    return await mensajes.list(conversacion_id)
