@@ -15,9 +15,14 @@ class ConversacionRepository:
     def __init__(self, conn: AsyncConnection) -> None:
         self._conn = conn
 
-    async def list(self) -> list[Conversacion]:
+    async def list(self, usuario_id: UUID) -> list[Conversacion]:
         cursor = await self._conn.execute(
-            f'select {_COLUMNS} from conversacion order by fecha_creacion desc'
+            f"""
+            select {_COLUMNS} from conversacion
+            where usuario_id = %s
+            order by fecha_creacion desc
+            """,
+            (usuario_id,),
         )
         return [Conversacion.model_validate(row) for row in await cursor.fetchall()]
 

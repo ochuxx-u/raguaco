@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Body, HTTPException, Path, status
+from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 from psycopg.errors import ForeignKeyViolation
 
 from api.deps import ConversacionRepositoryDep, MensajeRepositoryDep
@@ -37,12 +37,22 @@ class MensajePeticion(Mensaje):
     '/',
     response_model=list[Conversacion],
     summary='Listar conversaciones',
-    description='Devuelve todas las conversaciones registradas, de la más reciente a la más antigua.',
+    description=(
+        'Devuelve las conversaciones del usuario indicado, de la más reciente a la más '
+        'antigua. `usuario_id` es obligatorio.'
+    ),
+    responses={
+        422: {'description': 'Falta `usuario_id` o no es un UUID válido'},
+    },
 )
 async def list_conversations(
     repo: ConversacionRepositoryDep,
+    usuario_id: Annotated[
+        UUID,
+        Query(description='Identificador del usuario dueño de las conversaciones'),
+    ],
 ) -> list[Conversacion]:
-    return await repo.list()
+    return await repo.list(usuario_id)
 
 
 @router.post(
