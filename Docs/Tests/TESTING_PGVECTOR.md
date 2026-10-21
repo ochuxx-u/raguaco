@@ -62,7 +62,7 @@ Qué hace cada opción:
 Esperar a que acepte conexiones:
 
 ```bash
-until docker exec raguaco-db pg_isready -U raguaco -d raguaco; do sleep 1; done
+docker exec raguaco-db pg_isready -U raguaco -d raguaco
 ```
 
 Debe imprimir `.../5432 - accepting connections`. Si no responde en unos segundos, revisar `docker logs raguaco-db`.

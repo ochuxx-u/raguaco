@@ -25,7 +25,7 @@ insert into usuario (id, nombre, email)
 values (
   '00000000-0000-4000-8000-000000000001',
   'Ana García',
-  'ana.garcia@raguaco.test'
+  'ana.garcia@raguaco.com'
 )
 on conflict do nothing;
 
