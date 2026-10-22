@@ -51,6 +51,32 @@ brew install espeak-ng ffmpeg
 scoop install main/espeak-ng
 ```
 
+### Descargar modelo de STT (faster-whisper)
+
+Modelo de transcripción de voz a texto (STT) que Raguaco usa para convertir la pregunta hablada del usuario en texto antes de consultar el RAG. Se ejecuta **en local**, sin API externa.
+
+**1. Instalar las dependencias** (ya incluidas en `requirements.txt`: `faster-whisper`, `sounddevice`, `soundfile`):
+```
+pip install -r requirements.txt
+```
+
+**2. Descargar el modelo** desde HuggingFace (variante `small`, ~460 MB):
+```
+hf download Systran/faster-whisper-small --local-dir App/ai-models/faster-whisper-small
+```
+
+Debe crearse la ruta `./App/ai-models/faster-whisper-small/` con los archivos `model.bin`, `config.json`, `tokenizer.json` y `vocabulary.txt`.
+
+Otros tamaños disponibles (más precisos, más pesados y más lentos en CPU): `tiny`, `base`, `medium`, `large-v3`, `large-v3-turbo`, `distil-large-v3`. Para usarlos basta repetir el comando con el repositorio correspondiente, por ejemplo `Systran/faster-whisper-base --local-dir App/ai-models/faster-whisper-base`.
+
+**3. Configurar la ruta del modelo** en `.env` (copiar `.env.example`). Las rutas son relativas a `App/`:
+```
+STT_MODEL=ai-models/faster-whisper-small
+STT_LANGUAGE=es
+STT_DEVICE=cpu
+STT_COMPUTE_TYPE=int8
+```
+
 ### Descargar modelo de embeddings (multilingual-e5-small)
 
 Modelo de embeddings multilingüe que Raguaco usa para vectorizar los fragmentos de los documentos (`passage`) y las preguntas del usuario (`query`).

@@ -11,4 +11,6 @@ onnxruntime
 soundfile
 huggingface_hub
 tokenizers
+faster-whisper
+soundcard
 pip-audit
