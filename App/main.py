@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from api.deps import get_llm_service
 from api.routes.conversations import router as conversations_router
 from api.routes.documents import router as documents_router
 from api.routes.queries import router as queries_router
@@ -12,9 +13,10 @@ from infrastructure.db.session import close_pool, open_pool
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Abre el pool de PostgreSQL al arrancar y lo cierra al apagar."""
+    """Abre el pool de PostgreSQL al arrancar y cierra recursos al apagar."""
     await open_pool()
     yield
+    await get_llm_service().aclose()
     await close_pool()
 
 

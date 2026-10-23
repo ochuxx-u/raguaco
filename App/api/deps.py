@@ -6,6 +6,7 @@ pueden probar con repositorios falsos.
 """
 
 from collections.abc import AsyncIterator
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends
@@ -16,6 +17,7 @@ from infrastructure.db.repositories.documento_repository import DocumentoReposit
 from infrastructure.db.repositories.mensaje_repository import MensajeRepository
 from infrastructure.db.repositories.usuario_repository import UsuarioRepository
 from infrastructure.db.session import pool
+from infrastructure.llm.llm_service import LLMService
 
 
 async def get_db() -> AsyncIterator[AsyncConnection]:
@@ -49,3 +51,12 @@ ConversacionRepositoryDep = Annotated[
     ConversacionRepository, Depends(get_conversacion_repository)
 ]
 MensajeRepositoryDep = Annotated[MensajeRepository, Depends(get_mensaje_repository)]
+
+
+@lru_cache(maxsize=1)
+def get_llm_service() -> LLMService:
+    """Instancia única del LLM: reutiliza las conexiones HTTPS entre peticiones."""
+    return LLMService()
+
+
+LLMServiceDep = Annotated[LLMService, Depends(get_llm_service)]

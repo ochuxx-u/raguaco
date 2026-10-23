@@ -13,4 +13,5 @@ huggingface_hub
 tokenizers
 faster-whisper
 soundcard
+httpx
 pip-audit
