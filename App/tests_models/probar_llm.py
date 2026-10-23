@@ -4,7 +4,7 @@ Prueba manual del LLM vía API (OpenCode Go, OpenAI-compatible).
 Requisitos: `LLM_API_KEY` (y opcionalmente `LLM_MODEL`) en `.env` o en el
 entorno. Se ejecuta con `App/` como raíz:
 
-    cd App && ../venv/bin/python tests/probar_llm.py
+    cd App && ../venv/bin/python tests_models/probar_llm.py
 
 Verifica las tres superficies de `infrastructure/llm/llm_service.py`:
 catálogo (`GET /models`), respuesta completa (`POST /chat/completions`) y
@@ -13,8 +13,12 @@ debe levantar `LLMError` sin tumbar nada (RNF6).
 """
 
 import asyncio
+import sys
+from pathlib import Path
 
-from infrastructure.llm.llm_service import LLMError, LLMService
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from infrastructure.llm.llm_service import LLMError, LLMService  # noqa: E402
 
 
 async def main() -> None:
