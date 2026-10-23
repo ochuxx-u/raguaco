@@ -61,6 +61,24 @@ class Settings(BaseSettings):
         ),
     )
 
+    embedding_model: str = Field(
+        default='ai-models/multilingual-e5-small',
+        description=(
+            'Directorio del modelo de embeddings descargado con hf download '
+            '(intfloat/multilingual-e5-small). Ruta relativa a `App/`; los '
+            'pesos NO viajan en git, ver README.'
+        ),
+    )
+
+    embedding_dimension: int = Field(
+        default=384,
+        gt=0,
+        description=(
+            'Dimensiones que produce el modelo; debe coincidir con '
+            'chunk.embedding vector(384) de App/migrations/001_schema.sql.'
+        ),
+    )
+
     @model_validator(mode='before')
     @classmethod
     def _descartar_envios_vacios(cls, datos: object) -> object:

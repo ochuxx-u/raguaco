@@ -81,7 +81,7 @@ STT_COMPUTE_TYPE=int8
 
 #### Descargar modelo de embeddings (multilingual-e5-small)
 
-Modelo de embeddings multilingüe que Raguaco usa para vectorizar los fragmentos de los documentos (`passage`) y las preguntas del usuario (`query`).
+Modelo de embeddings multilingüe que Raguaco usa para vectorizar los fragmentos de los documentos (`passage`) y las preguntas del usuario (`query`); recupera resultados a través del método de similitud del coseno.
 
 ```
 # Haber descargado previamente los requirements.txt

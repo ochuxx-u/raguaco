@@ -17,6 +17,7 @@ from infrastructure.db.repositories.documento_repository import DocumentoReposit
 from infrastructure.db.repositories.mensaje_repository import MensajeRepository
 from infrastructure.db.repositories.usuario_repository import UsuarioRepository
 from infrastructure.db.session import pool
+from infrastructure.embeddings.embedding_service import EmbeddingService
 from infrastructure.llm.llm_service import LLMService
 
 
@@ -60,3 +61,16 @@ def get_llm_service() -> LLMService:
 
 
 LLMServiceDep = Annotated[LLMService, Depends(get_llm_service)]
+
+
+@lru_cache(maxsize=1)
+def get_embedding_service() -> EmbeddingService:
+    """Instancia única del modelo de embeddings: los pesos ONNX se cargan una vez.
+
+    La carga es perezosa, así que pedir la dependencia no exige tener el modelo
+    descargado; eso se comprueba con `EmbeddingService.configured`.
+    """
+    return EmbeddingService()
+
+
+EmbeddingServiceDep = Annotated[EmbeddingService, Depends(get_embedding_service)]
