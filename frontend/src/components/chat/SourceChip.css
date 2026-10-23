@@ -1,0 +1,25 @@
+.source-chip {
+  padding: 4px 10px;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-12);
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.source-chip:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.source-chip--active {
+  color: var(--color-accent);
+  background-color: rgba(34, 211, 238, 0.08);
+  border-color: var(--color-accent);
+}

@@ -29,7 +29,7 @@ function DocumentRow({ document, onAsk, onViewDetail, onDelete }) {
           className="document-row__ask"
           type="button"
           aria-label={`Preguntar sobre ${document.nombre}`}
-          onClick={onAsk}
+          onClick={() => onAsk(document)}
         >
           Preguntar
         </button>

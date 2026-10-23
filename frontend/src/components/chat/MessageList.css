@@ -1,0 +1,122 @@
+.message-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 22px 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.message-list__state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 0;
+  padding: 32px;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: var(--font-size-14);
+}
+
+.message-list__state p {
+  line-height: 1.6;
+}
+
+.message-list__state--error {
+  color: var(--color-danger);
+}
+
+.message-list__spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: message-list-spin 700ms linear infinite;
+}
+
+.message-list__retry {
+  padding: 8px 16px;
+  color: var(--color-text);
+  background-color: transparent;
+  border: 1px solid var(--color-interactive);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.message-list__retry:hover {
+  background-color: rgba(59, 130, 246, 0.12);
+  border-color: var(--color-accent);
+}
+
+.message-list__empty {
+  margin: auto;
+  max-width: 340px;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: var(--font-size-14);
+  line-height: 1.6;
+}
+
+.message-list__typing {
+  display: flex;
+  align-self: flex-start;
+  gap: 5px;
+  padding: 14px 18px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px 16px 16px 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.message-list__typing span {
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-accent);
+  border-radius: 50%;
+  animation: message-list-bounce 900ms ease-in-out infinite;
+}
+
+.message-list__typing span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.message-list__typing span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+@keyframes message-list-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes message-list-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (max-width: 767px) {
+  .message-list {
+    gap: 12px;
+    padding: 18px 20px;
+  }
+}

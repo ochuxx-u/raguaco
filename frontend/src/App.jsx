@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import AppLayout from './layout/AppLayout.jsx'
 import FloatingUserButton from './layout/FloatingUserButton.jsx'
 import ChatPage from './pages/ChatPage.jsx'
@@ -13,15 +13,21 @@ function App() {
   const [activeView, setActiveView] = useState('landing')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [selectedConversationId, setSelectedConversationId] = useState(null)
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null)
 
-  const handleNavigate = (view, conversationId = null) => {
+  const handleNavigate = (view, conversationId = null, documentId = null) => {
     setActiveView(view)
     setSelectedConversationId(conversationId)
+    setSelectedDocumentId(documentId)
   }
 
   const handleToggleSidebar = () => {
     setIsSidebarCollapsed((isCollapsed) => !isCollapsed)
   }
+
+  const handleSelectedDocumentChange = useCallback((documentId) => {
+    setSelectedDocumentId(documentId)
+  }, [])
 
   const renderActivePage = () => {
     switch (activeView) {
@@ -30,7 +36,13 @@ function App() {
       case 'documents':
         return <DocumentsPage onNavigate={handleNavigate} />
       case 'chat':
-        return <ChatPage conversationId={selectedConversationId} />
+        return (
+          <ChatPage
+            conversationId={selectedConversationId}
+            onSelectedDocumentChange={handleSelectedDocumentChange}
+            selectedDocumentId={selectedDocumentId}
+          />
+        )
       case 'history':
         return <HistoryPage />
       case 'voice':

@@ -1,0 +1,56 @@
+.evidence-card {
+  padding: 14px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.evidence-card--active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.2);
+}
+
+.evidence-card__header {
+  color: var(--color-text);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.evidence-card__fragment {
+  display: -webkit-box;
+  margin-top: 8px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.evidence-card__fragment--expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.evidence-card__toggle {
+  margin-top: 10px;
+  padding: 0;
+  color: var(--color-interactive);
+  background-color: transparent;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  transition: color 150ms ease;
+}
+
+.evidence-card__toggle:hover {
+  color: var(--color-accent);
+}

@@ -3,6 +3,7 @@ import DocumentDetailPanel from '../components/documents/DocumentDetailPanel.jsx
 import DocumentList from '../components/documents/DocumentList.jsx'
 import DocumentUploader from '../components/documents/DocumentUploader.jsx'
 import documentsService from '../services/documentsService.js'
+import queriesService from '../services/queriesService.js'
 import { DOCUMENT_STATES } from '../utils/documents.js'
 import './DocumentsPage.css'
 
@@ -165,8 +166,13 @@ function DocumentsPage({ onNavigate = () => {} }) {
     setDetailError('')
   }
 
-  const handleAsk = () => {
-    onNavigate('chat')
+  const startConversationForDocument = async (document) => {
+    const conversation = await queriesService.createConversation(document.id)
+    onNavigate('chat', conversation.id, document.id)
+  }
+
+  const handleAsk = (document) => {
+    void startConversationForDocument(document)
   }
 
   const handleRequestDelete = (document) => {
@@ -338,9 +344,9 @@ function DocumentsPage({ onNavigate = () => {} }) {
         <DocumentDetailPanel
           document={selectedDocumentForPanel}
           error={detailError}
-          onAsk={() => {
+          onAsk={(document) => {
             closeDetail()
-            onNavigate('chat')
+            void startConversationForDocument(document)
           }}
           onClose={closeDetail}
         />

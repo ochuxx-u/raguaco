@@ -1,3 +1,4 @@
+import { chatSeedMessages, vacationSources } from './chatSeeds.js'
 import { documentSeeds } from './documentSeeds.js'
 
 const LATENCY_MIN = 300
@@ -6,7 +7,9 @@ const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', '
 
 const documents = documentSeeds.map((document) => ({ ...document }))
 const processingTimers = new Map()
+const conversations = new Map()
 let sequence = 0
+let conversationSequence = 0
 
 function wait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -18,6 +21,31 @@ function getLatency() {
 
 function cloneDocument(document) {
   return { ...document }
+}
+
+function cloneSource(source) {
+  return { ...source }
+}
+
+function cloneChatMessage(message) {
+  return {
+    ...message,
+    sources: (message.sources ?? []).map(cloneSource),
+  }
+}
+
+function cloneConversation(conversation) {
+  return {
+    ...conversation,
+    messages: conversation.messages.map(cloneChatMessage),
+  }
+}
+
+function normalizeText(value) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }
 
 function formatDate(date) {
@@ -144,4 +172,59 @@ export async function removeDocument(id) {
   const [removedDocument] = documents.splice(index, 1)
 
   return cloneDocument(removedDocument)
+}
+
+export async function createChatConversation(documentId = null) {
+  const id = `conversation-${Date.now()}-${conversationSequence++}`
+  const conversation = {
+    id,
+    documentId: documentId ?? null,
+    messages: [],
+  }
+
+  conversations.set(id, conversation)
+
+  return cloneConversation(conversation)
+}
+
+export async function getChatMessages(conversationId) {
+  await wait(getLatency())
+
+  if (!conversationId) {
+    const seedDocumentExists = documents.some(
+      (document) => document.id === 'doc-manual-politicas',
+    )
+
+    return seedDocumentExists ? chatSeedMessages.map(cloneChatMessage) : []
+  }
+
+  const conversation = conversations.get(conversationId)
+
+  return conversation ? conversation.messages.map(cloneChatMessage) : []
+}
+
+export async function askQuestion(question, conversationId, options = {}) {
+  await wait(getLatency())
+
+  const normalizedQuestion = normalizeText(question)
+  const seedDocumentExists = documents.some(
+    (document) => document.id === 'doc-manual-politicas',
+  )
+  const requestedDocumentId = options.documentId ?? null
+  const hasVacationEvidence =
+    normalizedQuestion.includes('vacacion') &&
+    seedDocumentExists &&
+    (!requestedDocumentId || requestedDocumentId === 'doc-manual-politicas')
+
+  if (hasVacationEvidence) {
+    return {
+      respuesta: 'Corresponden 15 días hábiles después de completar un año de servicio.',
+      fuentes: vacationSources.map(cloneSource),
+    }
+  }
+
+  return {
+    respuesta: null,
+    fuentes: [],
+  }
 }
