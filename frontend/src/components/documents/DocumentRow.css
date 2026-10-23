@@ -1,0 +1,158 @@
+.document-row {
+  display: grid;
+  grid-template-areas: 'type info progress badge actions';
+  grid-template-columns: 44px minmax(0, 1fr) 140px auto auto;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.document-row__type {
+  display: flex;
+  grid-area: type;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--color-accent);
+  background-color: var(--color-surface-deep);
+  border-radius: var(--radius-file-icon);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.document-row__info {
+  grid-area: info;
+  min-width: 0;
+}
+
+.document-row__name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-row__meta {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-row__progress {
+  grid-area: progress;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: 1.4;
+}
+
+.document-row__badge {
+  grid-area: badge;
+}
+
+.document-row__actions {
+  display: flex;
+  grid-area: actions;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-self: end;
+  gap: 8px;
+}
+
+.document-row__ask {
+  padding: 8px 14px;
+  color: var(--color-text);
+  background-color: transparent;
+  border: 1px solid var(--color-interactive);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.document-row__ask:hover {
+  background-color: rgba(59, 130, 246, 0.12);
+  border-color: var(--color-accent);
+}
+
+.document-row__link {
+  padding: 8px 6px;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-13);
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.document-row__link:hover {
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+.document-row__link--danger {
+  color: var(--color-danger);
+}
+
+.document-row__link--danger:hover {
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+}
+
+@media (max-width: 1199px) {
+  .document-row {
+    grid-template-areas:
+      'type info badge'
+      'type progress actions';
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    row-gap: 10px;
+  }
+
+  .document-row__type {
+    align-self: center;
+  }
+}
+
+@media (max-width: 767px) {
+  .document-row {
+    grid-template-areas:
+      'type info badge'
+      'type progress progress'
+      'actions actions actions';
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 16px;
+  }
+
+  .document-row__type {
+    align-self: start;
+  }
+
+  .document-row__badge {
+    justify-self: end;
+  }
+
+  .document-row__actions {
+    justify-content: flex-start;
+    justify-self: stretch;
+  }
+}

@@ -28,7 +28,7 @@ function App() {
       case 'dashboard':
         return <DashboardPage onNavigate={handleNavigate} />
       case 'documents':
-        return <DocumentsPage />
+        return <DocumentsPage onNavigate={handleNavigate} />
       case 'chat':
         return <ChatPage conversationId={selectedConversationId} />
       case 'history':
