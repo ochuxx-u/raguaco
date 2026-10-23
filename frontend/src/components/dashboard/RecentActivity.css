@@ -1,0 +1,26 @@
+.recent-activity {
+  min-width: 0;
+  padding: 20px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.recent-activity__title {
+  color: var(--color-text);
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+}
+
+.recent-activity__list {
+  margin-top: 6px;
+}
+
+.recent-activity__item {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: 2.2;
+  overflow-wrap: anywhere;
+}

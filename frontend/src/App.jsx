@@ -26,7 +26,7 @@ function App() {
   const renderActivePage = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardPage />
+        return <DashboardPage onNavigate={handleNavigate} />
       case 'documents':
         return <DocumentsPage />
       case 'chat':
@@ -38,7 +38,7 @@ function App() {
       case 'evidence':
         return <EvidencePage />
       default:
-        return <DashboardPage />
+        return <DashboardPage onNavigate={handleNavigate} />
     }
   }
 
