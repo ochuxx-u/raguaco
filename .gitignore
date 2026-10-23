@@ -5,7 +5,6 @@
 *.drawio.tmp
 *.drawio.tmp**
 *.drawio-bkp**
-App/tests/
 venv
 **/venv/*
 **/__pycache__/*
