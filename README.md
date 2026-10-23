@@ -21,7 +21,9 @@ cd App && uvicorn main:app
 ### Iniciar aplicación (frontend)
 Para iniciar el apartado visual (lado del cliente) ver [aquí](frontend/README.md).
 
-### Descargar voz para el TTS (Kokoro)
+### Descarga/instalación de modelos de Inteligencia Artificial
+
+#### Descargar voz para el TTS (Kokoro)
 
 Descargar modelo de voz Kokoro-82M desde HuggingFace
 ```
@@ -51,7 +53,7 @@ brew install espeak-ng ffmpeg
 scoop install main/espeak-ng
 ```
 
-### Descargar modelo de STT (faster-whisper)
+#### Descargar modelo de STT (faster-whisper)
 
 Modelo de transcripción de voz a texto (STT) que Raguaco usa para convertir la pregunta hablada del usuario en texto antes de consultar el RAG. Se ejecuta **en local**, sin API externa.
 
@@ -77,7 +79,7 @@ STT_DEVICE=cpu
 STT_COMPUTE_TYPE=int8
 ```
 
-### Descargar modelo de embeddings (multilingual-e5-small)
+#### Descargar modelo de embeddings (multilingual-e5-small)
 
 Modelo de embeddings multilingüe que Raguaco usa para vectorizar los fragmentos de los documentos (`passage`) y las preguntas del usuario (`query`).
 
@@ -119,9 +121,23 @@ La ruta se configura en `.env` y, como la aplicación se ejecuta con `App/` como
 EMBEDDING_MODEL=ai-models/multilingual-e5-small
 EMBEDDING_DIMENSION=384
 ```
-
 La dimensión 384 coincide con la columna `vector(384)` del schema de la base de datos.
 
+#### Conectar modelo LLM
+
+> [!NOTE]
+> Actualmente el servicio LLM permite únicamente conexión a través de la API Key de OpenCode Go.
+
+Para establecer la conexión con el modelo LLM basta con definir el endpoint del servicio, definir el tipo de modelo (DeepSeek, Qwen, Gemini, Claude, etc) y conectar el API Key.
+
+El archivo `.env.example` indica cómo debe verse el archivo `.env` donde, en un apartado, se integran los datos mencionados:
+
+```
+LLM_BASE_URL=https://opencode.ai/zen/go/v1
+LLM_MODEL=qwen3.8-flash
+LLM_API_KEY=oc_sk_1...
+``` 
+ 
 ### Docs iniciales
 - [Requerimientos funcionales y no funcionales](Docs/Requerimientos/RF%20-%20RNF.md)
 - [Diagramas UML](Docs/DIAGRAMS.md)
