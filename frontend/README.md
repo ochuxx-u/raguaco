@@ -1,5 +1,8 @@
 # RAGUACO AI — Frontend
 
+> [!WARNING]
+> Esta instalación a continuación se realiza desde la ruta frontend/
+
 Interfaz web de **RAGUACO**, un sistema RAG conversacional para cargar documentos, formular preguntas en lenguaje natural y obtener respuestas fundamentadas en fuentes.
 
 Construida con **React**, **Vite**, **JavaScript** y **CSS**.
