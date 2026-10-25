@@ -1,4 +1,5 @@
 import { chatSeedMessages, vacationSources } from './chatSeeds.js'
+import { conversationSeeds } from './conversationSeeds.js'
 import { documentSeeds } from './documentSeeds.js'
 
 const LATENCY_MIN = 300
@@ -39,6 +40,20 @@ function cloneConversation(conversation) {
     ...conversation,
     messages: conversation.messages.map(cloneChatMessage),
   }
+}
+
+for (const conversation of conversationSeeds) {
+  conversations.set(conversation.id, cloneConversation(conversation))
+}
+
+function getLastUserQuestion(messages) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].role === 'user') {
+      return messages[index].content ?? ''
+    }
+  }
+
+  return ''
 }
 
 function normalizeText(value) {
@@ -201,6 +216,33 @@ export async function getChatMessages(conversationId) {
   const conversation = conversations.get(conversationId)
 
   return conversation ? conversation.messages.map(cloneChatMessage) : []
+}
+
+export async function listChatConversations() {
+  await wait(getLatency())
+
+  return [...conversations.values()]
+    .filter((conversation) => conversation.titulo && conversation.messages.length > 0)
+    .map((conversation) => ({
+      id: conversation.id,
+      titulo: conversation.titulo,
+      fecha: conversation.fecha,
+      mensajeCount: conversation.messages.length,
+      ultimaPregunta: getLastUserQuestion(conversation.messages),
+      documentId: conversation.documentId ?? null,
+    }))
+}
+
+export async function getChatConversationById(id) {
+  await wait(getLatency())
+
+  const conversation = conversations.get(id)
+
+  if (!conversation) {
+    throw new Error('Conversación no encontrada.')
+  }
+
+  return cloneConversation(conversation)
 }
 
 export async function askQuestion(question, conversationId, options = {}) {

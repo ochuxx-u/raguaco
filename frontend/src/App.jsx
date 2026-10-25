@@ -29,6 +29,10 @@ function App() {
     setSelectedDocumentId(documentId)
   }, [])
 
+  const handleOpenConversation = (conversationId, documentId = null) => {
+    handleNavigate('chat', conversationId, documentId)
+  }
+
   const renderActivePage = () => {
     switch (activeView) {
       case 'dashboard':
@@ -44,7 +48,7 @@ function App() {
           />
         )
       case 'history':
-        return <HistoryPage />
+        return <HistoryPage onOpenConversation={handleOpenConversation} />
       case 'voice':
         return <VoicePage />
       case 'evidence':
