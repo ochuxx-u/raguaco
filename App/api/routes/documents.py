@@ -4,19 +4,20 @@ Conectan la API con la entidad de dominio `Documento`
 (`domain/models/documento.py`) y con la tabla `documento` de PostgreSQL a
 través de `DocumentoRepository`. El cliente solo indica la ruta del archivo
 cargado; el servidor reconoce el resto de los datos (nombre y formato) y
-asigna los que le corresponden (`id`, `fecha_carga`, `estado`).
+asigna los que le corresponden (`id`, `fecha_carga`, `estado`). El registro
+dispara el pipeline de ingesta (`DocumentIngestionService`, RF2), de modo que
+`POST` devuelve el documento ya procesado (fragmentos y embeddings guardados).
 """
 
 import os
-from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, Response, status
 from psycopg.errors import ForeignKeyViolation
 
-from api.deps import DocumentoRepositoryDep
-from domain.models.documento import Documento, EstadoDocumento
+from api.deps import DocumentIngestionServiceDep, DocumentoRepositoryDep
+from domain.models.documento import Documento
 
 router = APIRouter(prefix='/v1/models/documents', tags=['documents'])
 
@@ -41,12 +42,16 @@ async def list_documents(
     '/',
     response_model=Documento,
     status_code=status.HTTP_201_CREATED,
-    summary='Registrar un documento',
+    summary='Registrar y procesar un documento',
     description=(
-        'Registra un documento a partir de la ruta del archivo. El servidor reconoce '
-        'el `nombre` y el `formato` a partir de la ruta, y asigna el `id`, la '
-        '`fecha_carga` (UTC) y el `estado` inicial (`pendiente`): los que vengan en el '
-        'cuerpo se ignoran.'
+        'Procesa el archivo de la ruta indicada con el pipeline de ingesta automático '
+        '(RF2) y lo registra: guarda una copia del original, extrae el texto, lo limpia, '
+        'lo fragmenta, genera el embedding de cada fragmento y guarda los fragmentos con '
+        'sus vectores. El servidor reconoce el `nombre` y el `formato` a partir de la '
+        'ruta, y asigna el `id`, la `fecha_carga` (UTC) y el `estado`: los que vengan en '
+        'el cuerpo se ignoran. La respuesta devuelve el documento ya procesado, con '
+        '`estado` `listo`, o con `estado` `error` y el motivo del fallo en '
+        '`metadatos["error"]` (RNF6: un documento fallido no interrumpe la aplicación).'
     ),
     responses={
         404: {'description': 'No existe el archivo o el usuario indicado'},
@@ -54,7 +59,7 @@ async def list_documents(
     },
 )
 async def create_document(
-    repo: DocumentoRepositoryDep,
+    ingestion: DocumentIngestionServiceDep,
     payload: Annotated[
         Documento,
         Body(
@@ -77,18 +82,13 @@ async def create_document(
             detail=f'No existe ningún archivo en la ruta {ruta}',
         )
 
-    documento = Documento(
-        usuario_id=payload.usuario_id,
-        nombre=payload.nombre,
-        formato=payload.formato,
-        ruta_original=ruta,
-        categoria=payload.categoria,
-        estado=EstadoDocumento.PENDIENTE,
-        fecha_carga=datetime.now(timezone.utc),
-        metadatos={**payload.metadatos, 'tamano_bytes': os.path.getsize(ruta)},
-    )
     try:
-        return await repo.create(documento)
+        return await ingestion.procesar_documento(
+            ruta,
+            usuario_id=payload.usuario_id,
+            categoria=payload.categoria,
+            metadatos=payload.metadatos,
+        )
     except ForeignKeyViolation as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

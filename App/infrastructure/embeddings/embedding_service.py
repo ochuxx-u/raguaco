@@ -137,6 +137,15 @@ class EmbeddingService:
             return []
         return await self._embeber([f'{PREFIJO_PASAJE}{texto}' for texto in textos])
 
+    async def generar_embedding(self, texto: str) -> list[float]:
+        """Vectoriza un fragmento de documento: es `generarEmbedding(texto)` del
+        diagrama de clases.
+
+        Delega en `embeber_pasajes` para conservar el prefijo `passage: ` que
+        exige e5.
+        """
+        return (await self.embeber_pasajes([texto]))[0]
+
     async def _embeber(self, textos_prefijados: list[str]) -> list[list[float]]:
         # La inferencia ONNX es intensiva en CPU: va en un hilo de trabajo para
         # no bloquear el loop de eventos mientras la API sirve otras peticiones.

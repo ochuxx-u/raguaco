@@ -15,4 +15,6 @@ tokenizers
 faster-whisper
 soundcard
 httpx
+pypdf
+python-docx
 pip-audit

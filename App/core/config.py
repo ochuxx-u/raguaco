@@ -79,6 +79,14 @@ class Settings(BaseSettings):
         ),
     )
 
+    storage_dir: str = Field(
+        default='storage',
+        description=(
+            'Directorio donde StorageService guarda los archivos originales. '
+            'Ruta relativa a App/ o absoluta (variable STORAGE_DIR).'
+        ),
+    )
+
     @model_validator(mode='before')
     @classmethod
     def _descartar_envios_vacios(cls, datos: object) -> object:

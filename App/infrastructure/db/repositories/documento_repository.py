@@ -71,6 +71,36 @@ class DocumentoRepository:
             raise RuntimeError('PostgreSQL no devolvió el documento insertado')
         return Documento.model_validate(row)
 
+    async def update(self, documento: Documento) -> Documento:
+        """Actualiza los datos editables del documento y devuelve su estado actual.
+
+        El pipeline de ingesta lo usa para persistir los cambios de estado
+        (`pendiente → procesando → listo/error`) y el motivo de un fallo en
+        `metadata` (RNF6).
+        """
+        cursor = await self._conn.execute(
+            f"""
+            update documento
+            set nombre = %s, formato = %s, ruta_original = %s, categoria = %s,
+                estado = %s, metadata = %s
+            where id = %s
+            returning {_COLUMNS}
+            """,
+            (
+                documento.nombre,
+                documento.formato,
+                documento.ruta_original,
+                documento.categoria,
+                documento.estado.value,
+                Jsonb(documento.metadatos),
+                documento.id,
+            ),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            raise RuntimeError(f'PostgreSQL no devolvió el documento actualizado {documento.id}')
+        return Documento.model_validate(row)
+
     async def delete(self, documento_id: UUID) -> bool:
         cursor = await self._conn.execute(
             'delete from documento where id = %s returning id',

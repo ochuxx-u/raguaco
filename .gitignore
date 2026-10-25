@@ -14,3 +14,4 @@ venv
 !.env.example
 .venv
 App/ai-models
+App/storage
