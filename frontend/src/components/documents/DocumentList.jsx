@@ -5,6 +5,7 @@ function DocumentList({
   documents,
   emptyMessage,
   error,
+  highlightedDocumentId,
   isLoading,
   onAsk,
   onDelete,
@@ -45,6 +46,7 @@ function DocumentList({
         <DocumentRow
           key={document.id}
           document={document}
+          isHighlighted={document.id === highlightedDocumentId}
           onAsk={onAsk}
           onDelete={onDelete}
           onViewDetail={onViewDetail}

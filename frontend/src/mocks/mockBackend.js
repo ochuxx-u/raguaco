@@ -9,8 +9,10 @@ const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', '
 const documents = documentSeeds.map((document) => ({ ...document }))
 const processingTimers = new Map()
 const conversations = new Map()
+const demoMessages = []
 let sequence = 0
 let conversationSequence = 0
+let chatMessageSequence = 0
 
 function wait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -44,6 +46,39 @@ function cloneConversation(conversation) {
 
 for (const conversation of conversationSeeds) {
   conversations.set(conversation.id, cloneConversation(conversation))
+}
+
+demoMessages.push(...chatSeedMessages.map(cloneChatMessage))
+
+function appendChatMessages(conversationId, messages) {
+  const targetMessages = conversationId
+    ? conversations.get(conversationId)?.messages
+    : demoMessages
+
+  if (!targetMessages) return
+
+  targetMessages.push(...messages.map(cloneChatMessage))
+}
+
+function getAllEvidenceSources() {
+  const sourcesById = new Map()
+
+  const collectSources = (messages) => {
+    for (const message of messages) {
+      for (const source of message.sources ?? []) {
+        sourcesById.set(source.id, source)
+      }
+    }
+  }
+
+  collectSources(chatSeedMessages)
+  collectSources(demoMessages)
+
+  for (const conversation of conversations.values()) {
+    collectSources(conversation.messages)
+  }
+
+  return [...sourcesById.values()]
 }
 
 function getLastUserQuestion(messages) {
@@ -210,7 +245,7 @@ export async function getChatMessages(conversationId) {
       (document) => document.id === 'doc-manual-politicas',
     )
 
-    return seedDocumentExists ? chatSeedMessages.map(cloneChatMessage) : []
+    return seedDocumentExists ? demoMessages.map(cloneChatMessage) : []
   }
 
   const conversation = conversations.get(conversationId)
@@ -245,6 +280,30 @@ export async function getChatConversationById(id) {
   return cloneConversation(conversation)
 }
 
+export async function getEvidenceById(id) {
+  await wait(getLatency())
+
+  const source = getAllEvidenceSources().find((item) => item.id === id)
+
+  if (!source) {
+    throw new Error('Evidencia no encontrada.')
+  }
+
+  return cloneSource(source)
+}
+
+export async function getDefaultEvidence() {
+  await wait(getLatency())
+
+  const source = getAllEvidenceSources()[0]
+
+  if (!source) {
+    throw new Error('Evidencia no disponible.')
+  }
+
+  return cloneSource(source)
+}
+
 export async function askQuestion(question, conversationId, options = {}) {
   await wait(getLatency())
 
@@ -257,16 +316,29 @@ export async function askQuestion(question, conversationId, options = {}) {
     normalizedQuestion.includes('vacacion') &&
     seedDocumentExists &&
     (!requestedDocumentId || requestedDocumentId === 'doc-manual-politicas')
+  const respuesta = hasVacationEvidence
+    ? 'Corresponden 15 días hábiles después de completar un año de servicio.'
+    : null
+  const fuentes = hasVacationEvidence ? vacationSources.map(cloneSource) : []
 
-  if (hasVacationEvidence) {
-    return {
-      respuesta: 'Corresponden 15 días hábiles después de completar un año de servicio.',
-      fuentes: vacationSources.map(cloneSource),
-    }
-  }
+  appendChatMessages(conversationId, [
+    {
+      id: `chat-message-${Date.now()}-${chatMessageSequence++}`,
+      role: 'user',
+      content: question,
+      sources: [],
+    },
+    {
+      id: `chat-message-${Date.now()}-${chatMessageSequence++}`,
+      role: 'assistant',
+      content: respuesta,
+      sources: fuentes,
+      hasEvidence: hasVacationEvidence,
+    },
+  ])
 
   return {
-    respuesta: null,
-    fuentes: [],
+    respuesta,
+    fuentes,
   }
 }

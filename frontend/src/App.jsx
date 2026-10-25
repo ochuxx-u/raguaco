@@ -14,6 +14,7 @@ function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [selectedConversationId, setSelectedConversationId] = useState(null)
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
+  const [selectedEvidenceId, setSelectedEvidenceId] = useState(null)
 
   const handleNavigate = (view, conversationId = null, documentId = null) => {
     setActiveView(view)
@@ -33,16 +34,39 @@ function App() {
     handleNavigate('chat', conversationId, documentId)
   }
 
+  const handleOpenEvidence = useCallback((evidenceId) => {
+    setSelectedEvidenceId(evidenceId)
+    setActiveView('evidence')
+  }, [])
+
+  const handleBackToChat = () => {
+    setActiveView('chat')
+  }
+
+  const handleOpenEvidenceDocument = (documentId) => {
+    if (documentId) {
+      setSelectedDocumentId(documentId)
+    }
+
+    setActiveView('documents')
+  }
+
   const renderActivePage = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardPage onNavigate={handleNavigate} />
       case 'documents':
-        return <DocumentsPage onNavigate={handleNavigate} />
+        return (
+          <DocumentsPage
+            onNavigate={handleNavigate}
+            selectedDocumentId={selectedDocumentId}
+          />
+        )
       case 'chat':
         return (
           <ChatPage
             conversationId={selectedConversationId}
+            onOpenEvidencePage={handleOpenEvidence}
             onSelectedDocumentChange={handleSelectedDocumentChange}
             selectedDocumentId={selectedDocumentId}
           />
@@ -52,7 +76,13 @@ function App() {
       case 'voice':
         return <VoicePage />
       case 'evidence':
-        return <EvidencePage />
+        return (
+          <EvidencePage
+            onBackToChat={handleBackToChat}
+            onOpenDocument={handleOpenEvidenceDocument}
+            selectedEvidenceId={selectedEvidenceId}
+          />
+        )
       default:
         return <DashboardPage onNavigate={handleNavigate} />
     }

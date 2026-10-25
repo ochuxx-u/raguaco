@@ -1,0 +1,105 @@
+.evidence-viewer {
+  min-width: 0;
+}
+
+.evidence-viewer__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.evidence-viewer__type {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: var(--color-accent);
+  background-color: var(--color-surface-deep);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.evidence-viewer__identity {
+  min-width: 0;
+}
+
+.evidence-viewer__name {
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1.3;
+}
+
+.evidence-viewer__metadata {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.evidence-viewer__fragment-section {
+  margin-top: 22px;
+}
+
+.evidence-viewer__fragment-label {
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.5px;
+}
+
+.evidence-viewer__fragment {
+  max-height: 40vh;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-15);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.evidence-viewer__fragment:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.evidence-viewer__fragment mark {
+  padding: 2px 4px;
+  color: var(--color-text);
+  background-color: rgba(34, 211, 238, 0.25);
+  border-radius: 4px;
+}
+
+@media (max-width: 767px) {
+  .evidence-viewer__type {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-file-icon);
+    font-size: var(--font-size-12);
+  }
+
+  .evidence-viewer__name {
+    font-size: var(--font-size-16);
+  }
+
+  .evidence-viewer__fragment-section {
+    margin-top: 18px;
+  }
+
+  .evidence-viewer__fragment {
+    padding: 16px;
+    font-size: var(--font-size-14);
+    line-height: 1.7;
+  }
+}

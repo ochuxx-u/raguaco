@@ -2,9 +2,9 @@ import { getDocumentSecondaryText } from '../../utils/documents.js'
 import DocumentStatusBadge from './DocumentStatusBadge.jsx'
 import './DocumentRow.css'
 
-function DocumentRow({ document, onAsk, onViewDetail, onDelete }) {
+function DocumentRow({ document, isHighlighted = false, onAsk, onViewDetail, onDelete }) {
   return (
-    <article className="document-row">
+    <article className={`document-row${isHighlighted ? ' document-row--highlighted' : ''}`}>
       <div className="document-row__type">
         {document.tipo}
       </div>

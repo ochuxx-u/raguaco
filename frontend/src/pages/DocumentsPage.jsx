@@ -9,7 +9,7 @@ import './DocumentsPage.css'
 
 const PIPELINE_STEPS = ['Upload', 'Process', 'Vectorize', 'Retrieve', 'Respond']
 
-function DocumentsPage({ onNavigate = () => {} }) {
+function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
   const [documents, setDocuments] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -24,6 +24,7 @@ function DocumentsPage({ onNavigate = () => {} }) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const detailRequestRef = useRef(0)
+  const autoOpenedDocumentRef = useRef(null)
 
   const loadDocuments = async () => {
     setIsLoading(true)
@@ -165,6 +166,25 @@ function DocumentsPage({ onNavigate = () => {} }) {
     setSelectedDocument(null)
     setDetailError('')
   }
+
+  useEffect(() => {
+    if (!selectedDocumentId) {
+      autoOpenedDocumentRef.current = null
+      return
+    }
+
+    if (documents.length === 0) return
+    if (autoOpenedDocumentRef.current === selectedDocumentId) return
+
+    const matchedDocument = documents.find(
+      (document) => document.id === selectedDocumentId,
+    )
+
+    if (!matchedDocument) return
+
+    autoOpenedDocumentRef.current = selectedDocumentId
+    void handleViewDetail(matchedDocument)
+  }, [documents, selectedDocumentId])
 
   const startConversationForDocument = async (document) => {
     const conversation = await queriesService.createConversation(document.id)
@@ -333,6 +353,7 @@ function DocumentsPage({ onNavigate = () => {} }) {
         documents={filteredDocuments}
         emptyMessage={emptyMessage}
         error={loadError}
+        highlightedDocumentId={selectedDocumentId}
         isLoading={isLoading}
         onAsk={handleAsk}
         onDelete={handleRequestDelete}

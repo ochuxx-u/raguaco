@@ -13,6 +13,7 @@ const INITIAL_EVIDENCE = {
 
 function ChatPage({
   conversationId,
+  onOpenEvidencePage = () => {},
   onSelectedDocumentChange = () => {},
   selectedDocumentId = null,
 }) {
@@ -181,6 +182,12 @@ function ChatPage({
     setIsEvidenceOpen(true)
   }
 
+  const handleOpenEvidenceFromChat = (source) => {
+    if (source?.id) {
+      onOpenEvidencePage(source.id)
+    }
+  }
+
   const handleOpenDocuments = () => {
     setIsDocumentsOpen(true)
     setIsEvidenceOpen(false)
@@ -330,6 +337,7 @@ function ChatPage({
           activeSourceId={activeEvidence.sourceId}
           focusToken={evidenceFocusToken}
           onClose={() => setIsEvidenceOpen(false)}
+          onViewMore={handleOpenEvidenceFromChat}
           sources={evidenceSources}
         />
       </aside>
