@@ -92,9 +92,6 @@ function LandingPage({ onNavigate = () => {} }) {
             >
               Comenzar ahora
             </button>
-            <button className="landing__button landing__button--secondary" type="button">
-              Ver demo
-            </button>
           </div>
         </section>
 
