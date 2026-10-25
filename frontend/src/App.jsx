@@ -74,7 +74,7 @@ function App() {
       case 'history':
         return <HistoryPage onOpenConversation={handleOpenConversation} />
       case 'voice':
-        return <VoicePage />
+        return <VoicePage onOpenEvidencePage={handleOpenEvidence} />
       case 'evidence':
         return (
           <EvidencePage

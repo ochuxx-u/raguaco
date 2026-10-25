@@ -304,6 +304,16 @@ export async function getDefaultEvidence() {
   return cloneSource(source)
 }
 
+export async function processVoiceQuery() {
+  await wait(getLatency())
+
+  return {
+    transcripcion: '¿Cuántos días de vacaciones tengo?',
+    respuesta: 'Corresponden 15 días hábiles, según la página 12.',
+    fuente: cloneSource(vacationSources[0]),
+  }
+}
+
 export async function askQuestion(question, conversationId, options = {}) {
   await wait(getLatency())
 
