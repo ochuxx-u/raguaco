@@ -15,7 +15,7 @@ Para iniciar el servidor de Raguaco es necesario:
 2. Tener PostgreSQL disponible y configurar `DATABASE_URL` en un archivo `.env` (copiar `.env.example`). Para levantar una base local con el esquema y datos de prueba, ver [Docs/Tests/TESTING_PGVECTOR.md](Docs/Tests/TESTING_PGVECTOR.md).
 3. Ejecutar servidor:
 ```
-cd App && uvicorn main:app
+cd App && uvicorn main:app --reload
 ```
 
 ### Iniciar aplicación (frontend)

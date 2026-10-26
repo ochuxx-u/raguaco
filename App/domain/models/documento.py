@@ -56,7 +56,10 @@ class Documento(ModeloBase):
     categoria: str | None = Field(
         default=None,
         max_length=100,
-        description='Categoría temática opcional; los documentos pueden no tenerla (RF1)',
+        description=(
+            'Categoría temática del documento; por ahora el servidor la rellena '
+            'con el mismo valor que `formato`'
+        ),
     )
     estado: EstadoDocumento = Field(
         default=EstadoDocumento.PENDIENTE,
@@ -65,6 +68,23 @@ class Documento(ModeloBase):
     fecha_carga: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description='Momento en que se cargó el documento',
+    )
+    num_paginas: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            'Páginas del archivo original detectadas durante la ingesta; 1 en '
+            'formatos sin paginación (txt, md, docx)'
+        ),
+    )
+    progreso: int = Field(
+        default=0,
+        ge=0,
+        le=100,
+        description=(
+            'Avance de la ingesta en porcentaje (0-100); llega a 100 cuando el '
+            'pipeline termina de procesar los chunks'
+        ),
     )
     metadatos: dict[str, Any] = Field(
         default_factory=dict,

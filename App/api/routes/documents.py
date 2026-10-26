@@ -49,7 +49,10 @@ async def list_documents(
         'lo fragmenta, genera el embedding de cada fragmento y guarda los fragmentos con '
         'sus vectores. El servidor reconoce el `nombre` y el `formato` a partir de la '
         'ruta, y asigna el `id`, la `fecha_carga` (UTC) y el `estado`: los que vengan en '
-        'el cuerpo se ignoran. La respuesta devuelve el documento ya procesado, con '
+        'el cuerpo se ignoran. La `categoria` se rellena con el mismo valor que el '
+        '`formato`, `num_paginas` se detecta del archivo y `progreso` refleja el avance '
+        'de la ingesta (100 al terminar). La respuesta devuelve el documento ya '
+        'procesado, con '
         '`estado` `listo`, o con `estado` `error` y el motivo del fallo en '
         '`metadatos["error"]` (RNF6: un documento fallido no interrumpe la aplicación).'
     ),
@@ -86,7 +89,6 @@ async def create_document(
         return await ingestion.procesar_documento(
             ruta,
             usuario_id=payload.usuario_id,
-            categoria=payload.categoria,
             metadatos=payload.metadatos,
         )
     except ForeignKeyViolation as exc:

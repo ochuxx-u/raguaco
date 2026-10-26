@@ -362,7 +362,7 @@ La base debe estar levantada **antes** de uvicorn: el pool abre conexiones y esp
 docker start raguaco-db
 
 # 2) backend (ya está indicado también en el paso 3 del README inicial)
-cd App && uvicorn main:app
+cd App && uvicorn main:app --reload
 ```
 
 ### Verificar que escribe en la base

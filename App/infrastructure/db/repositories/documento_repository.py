@@ -9,7 +9,7 @@ from domain.models.documento import Documento
 
 _COLUMNS = (
     'id, usuario_id, nombre, formato, ruta_original, categoria, estado, '
-    'fecha_carga, metadata'
+    'fecha_carga, num_paginas, progreso, metadata'
 )
 
 
@@ -49,9 +49,9 @@ class DocumentoRepository:
             f"""
             insert into documento (
                 id, usuario_id, nombre, formato, ruta_original, categoria,
-                estado, fecha_carga, metadata
+                estado, fecha_carga, num_paginas, progreso, metadata
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             returning {_COLUMNS}
             """,
             (
@@ -63,6 +63,8 @@ class DocumentoRepository:
                 documento.categoria,
                 documento.estado.value,
                 documento.fecha_carga,
+                documento.num_paginas,
+                documento.progreso,
                 Jsonb(documento.metadatos),
             ),
         )
@@ -75,14 +77,17 @@ class DocumentoRepository:
         """Actualiza los datos editables del documento y devuelve su estado actual.
 
         El pipeline de ingesta lo usa para persistir los cambios de estado
-        (`pendiente → procesando → listo/error`) y el motivo de un fallo en
-        `metadata` (RNF6).
+        (`pendiente → procesando → listo/error`), el avance (`num_paginas`,
+        `progreso`) y el motivo de un fallo en `metadata` (RNF6). La columna
+        `fecha_actualizacion` se refresca con `now()` para que "Actividad
+        reciente" tenga sentido.
         """
         cursor = await self._conn.execute(
             f"""
             update documento
             set nombre = %s, formato = %s, ruta_original = %s, categoria = %s,
-                estado = %s, metadata = %s
+                estado = %s, num_paginas = %s, progreso = %s, metadata = %s,
+                fecha_actualizacion = now()
             where id = %s
             returning {_COLUMNS}
             """,
@@ -92,6 +97,8 @@ class DocumentoRepository:
                 documento.ruta_original,
                 documento.categoria,
                 documento.estado.value,
+                documento.num_paginas,
+                documento.progreso,
                 Jsonb(documento.metadatos),
                 documento.id,
             ),

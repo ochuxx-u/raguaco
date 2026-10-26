@@ -32,6 +32,10 @@ Dos desviaciones conscientes respecto al diagrama:
 Un fallo en el procesamiento de un documento no tumba la aplicación (RNF6): el
 documento queda en estado `error` con el motivo en `metadatos['error']` y el
 servicio lo devuelve en lugar de relanzar la excepción.
+
+El registro del documento completa además `categoria` (mismo valor que
+`formato`), `num_paginas` (detectado del archivo) y `progreso` (0-100), que
+avanza con el procesamiento de los chunks y llega a 100 al terminar.
 """
 
 import os
@@ -81,7 +85,6 @@ class DocumentIngestionService:
         archivo: str | Path | BinaryIO,
         *,
         usuario_id: UUID,
-        categoria: str | None = None,
         metadatos: dict[str, Any] | None = None,
     ) -> Documento:
         """Procesa un archivo con el pipeline ETL completo y devuelve su `Documento`.
@@ -91,6 +94,10 @@ class DocumentIngestionService:
         el motivo en `metadatos['error']` (RNF6). Los errores de registro del
         documento (clave ajena inexistente, validación) sí se propagan para que
         la API los traduzca a 404/422; los del procesamiento no.
+
+        El registro rellena `categoria` con el mismo valor que `formato`, guarda
+        en `num_paginas` las páginas detectadas del archivo y hace avanzar
+        `progreso` (0-100) durante el pipeline hasta 100 al terminar.
 
         Pasos, según el diagrama de secuencia: `guardarOriginal(archivo)` →
         `extraerTexto` (sobre la copia guardada) → `limpiar` → `fragmentar` →
@@ -107,9 +114,10 @@ class DocumentIngestionService:
             documento = Documento(
                 usuario_id=usuario_id,
                 ruta_original=ruta_original,
-                categoria=categoria,
                 metadatos={**(metadatos or {}), 'tamano_bytes': os.path.getsize(ruta_original)},
             )
+            # `categoria` es el mismo dato que `formato`.
+            documento.categoria = documento.formato
             documento = await self._documento_repo.create(documento)
         except Exception:
             # El registro no llegó a completarse (usuario inexistente,
@@ -121,6 +129,9 @@ class DocumentIngestionService:
         documento = await self._documento_repo.update(documento)
 
         try:
+            # Páginas del archivo → `num_paginas` (un PDF cuenta su paginación
+            # real; txt, md y docx son una sola página).
+            documento.num_paginas = self._loader.contar_paginas(ruta_original)
             # extraerTexto(archivo) → texto (desviación (b): sobre la copia)
             texto = self._loader.extraer_texto(ruta_original)
             # limpiar(texto) → textoLimpio
@@ -128,8 +139,12 @@ class DocumentIngestionService:
             # fragmentar(textoLimpio) → chunks
             fragmentos = self._chunking.fragmentar(texto_limpio)
 
+            # Texto ya fragmentado: 25 % del avance.
+            documento = await self._avanzar(documento, 25)
+
             chunks: list[Chunk] = []
-            for fragmento in fragmentos:
+            total = len(fragmentos)
+            for posicion, fragmento in enumerate(fragmentos, start=1):
                 # loop [por cada chunk]: generarEmbedding(chunk.contenido) → embedding
                 embedding = await self._embeddings.generar_embedding(fragmento.contenido)
                 chunks.append(
@@ -142,12 +157,17 @@ class DocumentIngestionService:
                         embedding=embedding,
                     )
                 )
+                # El avance sigue el procesamiento de los chunks (25 → 90 %).
+                documento = await self._avanzar(
+                    documento, 25 + int(65 * posicion / total)
+                )
 
             # guardarChunks(chunks con embeddings) → ok
             await self._vector_repo.guardar_chunks(chunks)
 
-            # documento listo
+            # documento listo, con la ingesta completa (100 %)
             documento.marcar_listo()
+            documento.progreso = 100
             documento = await self._documento_repo.update(documento)
             return documento
         except Exception as exc:
@@ -157,3 +177,16 @@ class DocumentIngestionService:
             documento.marcar_error(f'{type(exc).__name__}: {exc}')
             documento = await self._documento_repo.update(documento)
             return documento
+
+    async def _avanzar(self, documento: Documento, progreso: int) -> Documento:
+        """Registra el avance de la ingesta y devuelve el documento actualizado.
+
+        `progreso` (0-100) es lo que muestra la pantalla de documentos mientras
+        se ingiere ("Indexando 62 %"). Solo se escribe en base de datos cuando
+        el porcentaje cambia de punto entero, para no ejecutar un `update` por
+        cada fragmento.
+        """
+        if progreso == documento.progreso:
+            return documento
+        documento.progreso = progreso
+        return await self._documento_repo.update(documento)
