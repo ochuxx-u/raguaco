@@ -376,17 +376,17 @@ Con la API en `http://127.0.0.1:8000` (o cual sea el puerto definido), crear dat
 # 1) usuario; guardar el id devuelto
 curl -X POST http://127.0.0.1:8000/v1/models/users/ \
   -H 'Content-Type: application/json' \
-  -d '{"nombre": "Ana García", "email": "ana@raguaco.test"}'
+  -d '{"nombre": "Ana García", "email": "ana@raguaco.dev"}'
 
 # 2) conversación (reemplazar USUARIO_ID)
 curl -X POST http://127.0.0.1:8000/v1/models/conversations/ \
   -H 'Content-Type: application/json' \
   -d '{"usuario_id": "USUARIO_ID"}'
 
-# 3) mensaje (reemplazar CONVERSACION_ID)
-curl -X POST http://127.0.0.1:8000/v1/models/conversations/CONVERSACION_ID/messages \
+# 3) mensaje (reemplazar USUARIO_ID y CONVERSACION_ID)
+curl -X POST http://127.0.0.1:8000/v1/queries/messages \
   -H 'Content-Type: application/json' \
-  -d '{"rol": "usuario", "contenido": "¿Cuántos días de vacaciones me corresponden?"}'
+  -d '{"usuario_id": "USUARIO_ID", "conversacion_id": "CONVERSACION_ID", "contenido": "¿Cuántos días de vacaciones me corresponden?"}'
 ```
 
 También se puede usar la documentación interactiva en el endpoint `.../docs` que integra FastAPI.

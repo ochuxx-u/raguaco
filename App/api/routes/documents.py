@@ -16,7 +16,7 @@ from uuid import UUID
 from fastapi import APIRouter, Body, HTTPException, Path, Query, Response, status
 from psycopg.errors import ForeignKeyViolation
 
-from api.deps import DocumentIngestionServiceDep, DocumentoRepositoryDep
+from api.deps import DocumentIngestionServiceDep, DocumentoRepositoryDep, StorageServiceDep
 from domain.models.documento import Documento
 
 router = APIRouter(prefix='/v1/models/documents', tags=['documents'])
@@ -128,7 +128,12 @@ async def get_document(
     '/{documento_id}',
     status_code=status.HTTP_204_NO_CONTENT,
     summary='Eliminar un documento',
-    description='Elimina el documento con el identificador indicado.',
+    description=(
+        'Elimina el documento con el identificador indicado junto con todo lo que '
+        'depende de él: sus fragmentos (chunks) con sus embeddings y las referencias '
+        'a fuentes que los citen (la base de datos los borra en cascada), y también '
+        'la copia del archivo guardada en el almacén.'
+    ),
     responses={
         404: {'description': 'No existe un documento con ese identificador'},
         422: {'description': 'El identificador no es un UUID válido'},
@@ -136,14 +141,17 @@ async def get_document(
 )
 async def delete_document(
     repo: DocumentoRepositoryDep,
+    storage: StorageServiceDep,
     documento_id: Annotated[
         UUID,
         Path(description='Identificador del documento'),
     ],
 ) -> Response:
-    if not await repo.delete(documento_id):
+    documento = await repo.get(documento_id)
+    if documento is None or not await repo.delete(documento_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No existe un documento con el id {documento_id}',
         )
+    storage.eliminar_original(documento.ruta_original)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

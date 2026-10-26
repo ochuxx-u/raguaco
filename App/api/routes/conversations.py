@@ -4,7 +4,8 @@ Conectan la API con las entidades de dominio `Conversacion` y `Mensaje`
 (`domain/models/conversacion.py`, `domain/models/mensaje.py`) y con las tablas
 `conversacion` y `mensaje` de PostgreSQL. El servidor es dueño del `id` y de
 las fechas (siempre en UTC); el cliente solo indica a qué usuario pertenece la
-conversación y qué dice cada mensaje.
+conversación. Los mensajes se publican desde `api/routes/queries.py` (flujo
+*Ask with PNL*) y aquí solo se leen como historial de la conversación.
 """
 
 from datetime import datetime, timezone
@@ -19,18 +20,6 @@ from domain.models.conversacion import Conversacion
 from domain.models.mensaje import Mensaje
 
 router = APIRouter(prefix='/v1/models/conversations', tags=['conversations'])
-
-
-class MensajePeticion(Mensaje):
-    """Cuerpo de la petición de un mensaje.
-
-    Es la entidad `Mensaje` con una única diferencia: `conversacion_id` es
-    opcional porque la conversación sale de la ruta
-    (`/{conversacion_id}/messages`), no del cuerpo. El `id` y la `fecha` los
-    asigna el servidor en UTC.
-    """
-
-    conversacion_id: UUID | None = None
 
 
 @router.get(
@@ -121,56 +110,6 @@ async def get_conversation(
             detail=f'No existe una conversación con el id {conversacion_id}',
         )
     return conversacion
-
-
-@router.post(
-    '/{conversacion_id}/messages',
-    response_model=Mensaje,
-    status_code=status.HTTP_201_CREATED,
-    summary='Crear un mensaje',
-    description=(
-        'Agrega un mensaje a la conversación. La conversación sale de la ruta y el '
-        '`id` y la `fecha` los asigna el servidor en UTC: los que vengan en el cuerpo '
-        'se ignoran.'
-    ),
-    responses={
-        404: {'description': 'No existe una conversación con ese identificador'},
-        422: {'description': 'El identificador o el mensaje no son válidos'},
-    },
-)
-async def create_message(
-    conversaciones: ConversacionRepositoryDep,
-    mensajes: MensajeRepositoryDep,
-    conversacion_id: Annotated[
-        UUID,
-        Path(description='Identificador de la conversación'),
-    ],
-    payload: Annotated[
-        MensajePeticion,
-        Body(
-            openapi_examples={
-                'valido': {
-                    'summary': 'Mensaje válido',
-                    'value': {'rol': 'usuario', 'contenido': '¿Cuántos días de vacaciones me corresponden?'},
-                }
-            }
-        ),
-    ],
-) -> Mensaje:
-    if await conversaciones.get(conversacion_id) is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'No existe una conversación con el id {conversacion_id}',
-        )
-
-    mensaje = Mensaje(
-        id=uuid4(),
-        conversacion_id=conversacion_id,
-        rol=payload.rol,
-        contenido=payload.contenido,
-        fecha=datetime.now(timezone.utc),
-    )
-    return await mensajes.create(mensaje)
 
 
 @router.get(
