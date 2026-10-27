@@ -88,6 +88,9 @@ rag_app/
 │   │   │   └── llm_service.py
 │   │   ├── embeddings/
 │   │   │   └── embedding_service.py
+│   │   ├── tts/
+│   │   │   ├── kokoro_tts.py
+│   │   │   └── tts_text.py
 │   │   └── loaders/
 │   │       ├── document_loader.py
 │   │       ├── text_cleaner.py

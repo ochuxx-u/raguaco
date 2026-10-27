@@ -87,6 +87,87 @@ class Settings(BaseSettings):
         ),
     )
 
+    tts_model: str = Field(
+        default='ai-models/kokoro-82m',
+        description=(
+            'Directorio del modelo TTS Kokoro-82M descargado con hf download. '
+            'Ruta relativa a App/; los pesos NO viajan en git (ver README).'
+        ),
+    )
+
+    tts_model_file: str = Field(
+        default='onnx/model_quantized.onnx',
+        description=(
+            'Archivo ONNX dentro de TTS_MODEL. `onnx/model_quantized.onnx` '
+            '(int8) prioriza la latencia; `onnx/model.onnx` (fp32) da la '
+            'máxima calidad a costa de ~1,4x más tiempo de síntesis.'
+        ),
+    )
+
+    tts_voice: str = Field(
+        default='ef_dora',
+        description=(
+            'Voz de Kokoro (archivo `voices/{voz}.bin`). `ef_dora` es la voz '
+            'femenina en español; `em_alex` es la masculina.'
+        ),
+    )
+
+    tts_language: str = Field(
+        default='es',
+        description='Idioma para la fonemización con espeak-ng (lang de Kokoro).',
+    )
+
+    tts_speed: float = Field(
+        default=1.0,
+        gt=0,
+        le=2,
+        description='Velocidad de habla de Kokoro (1.0 = normal).',
+    )
+
+    tts_output_dir: str = Field(
+        default='storage/tts',
+        description=(
+            'Directorio donde se escriben los WAV fragmentados. Ruta relativa '
+            'a App/ o absoluta.'
+        ),
+    )
+
+    tts_retention_minutes: int = Field(
+        default=30,
+        ge=0,
+        description=(
+            'Minutos que se conservan los WAV de una síntesis antes de '
+            'borrarse al preparar la siguiente. 0 desactiva la limpieza.'
+        ),
+    )
+
+    tts_first_chunk_chars: int = Field(
+        default=100,
+        gt=0,
+        description=(
+            'Tamaño máximo del primer fragmento. Se mantiene corto para que el '
+            'primer audio llegue cuanto antes; el resto usa TTS_CHUNK_CHARS.'
+        ),
+    )
+
+    tts_chunk_chars: int = Field(
+        default=120,
+        gt=0,
+        description=(
+            'Tamaño máximo de los fragmentos siguientes. Se mantiene acotado '
+            'para que cada WAV esté listo antes de que termine de sonar el '
+            'anterior (reproducción sin cortes).'
+        ),
+    )
+
+    tts_warmup: bool = Field(
+        default=True,
+        description=(
+            'Carga el modelo TTS en segundo plano al arrancar la API, de modo '
+            'que la primera petición no pague la carga de los pesos ONNX.'
+        ),
+    )
+
     @model_validator(mode='before')
     @classmethod
     def _descartar_envios_vacios(cls, datos: object) -> object:

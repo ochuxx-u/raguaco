@@ -15,6 +15,7 @@ from psycopg import AsyncConnection
 from domain.services.conversation_service import ConversationService
 from domain.services.document_ingestion_service import DocumentIngestionService
 from domain.services.rag_service import RAGService
+from domain.services.voice_service import VoiceService
 from infrastructure.db.repositories.conversacion_repository import ConversacionRepository
 from infrastructure.db.repositories.documento_repository import DocumentoRepository
 from infrastructure.db.repositories.mensaje_repository import MensajeRepository
@@ -28,6 +29,7 @@ from infrastructure.loaders.document_loader import DocumentLoader
 from infrastructure.loaders.text_cleaner import TextCleaner
 from infrastructure.retrieval.retriever import Retriever
 from infrastructure.storage.local_storage import StorageService
+from infrastructure.tts.kokoro_tts import KokoroTTS
 from infrastructure.vector.pgvector_repository import VectorRepository
 
 
@@ -78,6 +80,25 @@ def get_llm_service() -> LLMService:
 
 
 LLMServiceDep = Annotated[LLMService, Depends(get_llm_service)]
+
+
+@lru_cache(maxsize=1)
+def get_tts_engine() -> KokoroTTS:
+    """Motor TTS único por proceso: los pesos ONNX se cargan una sola vez.
+
+    La carga es perezosa; el lifespan lo precarga en segundo plano (ver
+    `TTS_WARMUP`) para que la primera síntesis no pague ese costo.
+    """
+    return KokoroTTS()
+
+
+@lru_cache(maxsize=1)
+def get_voice_service() -> VoiceService:
+    """Servicio de voz único: comparte el motor TTS y el directorio de WAV."""
+    return VoiceService(tts=get_tts_engine())
+
+
+VoiceServiceDep = Annotated[VoiceService, Depends(get_voice_service)]
 
 
 @lru_cache(maxsize=1)

@@ -53,6 +53,47 @@ brew install espeak-ng ffmpeg
 scoop install main/espeak-ng
 ```
 
+##### Configurar el TTS y probar el streaming
+
+En `.env` (copiar `.env.example`). Las rutas son relativas a `App/`:
+```
+TTS_MODEL=ai-models/kokoro-82m
+# int8: menor latencia | onnx/model.onnx: máxima calidad (fp32)
+TTS_MODEL_FILE=onnx/model_quantized.onnx
+TTS_VOICE=ef_dora
+TTS_LANGUAGE=es
+TTS_OUTPUT_DIR=storage/tts
+```
+
+El servicio no espera a sintetizar toda la respuesta: parte el texto en frases,
+escribe un `.wav` por frase en `App/storage/tts/{job_id}/` y entrega cada uno en
+cuanto está listo. El primer fragmento es corto para que el audio empiece antes
+y los siguientes se mantienen acotados (`TTS_CHUNK_CHARS`) para que cada WAV
+esté listo antes de que termine de sonar el anterior: reproducción sin cortes.
+
+Prueba local con el texto editable de la variable `TEXTO` (reproduce por el
+altavoz mientras sintetiza, o solo genera los WAV con `--sin-audio`):
+```
+cd App
+python tests_models/probar_tts_streaming.py
+python tests_models/probar_tts_streaming.py --sin-audio
+python tests_models/probar_tts_streaming.py --texto "Una prueba corta de voz."
+```
+
+API (`POST /v1/voice/tts`): responde `application/x-ndjson`, un evento por
+línea (`inicio`, `fragmento`, `fin`). Cada `fragmento` trae la URL del WAV para
+reproducirlo de inmediato:
+```
+curl -N -X POST http://localhost:8000/v1/voice/tts \
+  -H 'Content-Type: application/json' \
+  -d '{"texto":"Hola, esto es una prueba de la respuesta hablada."}'
+
+# El evento fragmento devuelve, por ejemplo:
+# {"tipo":"fragmento","indice":0,"nombre":"000.wav","url":"http://.../v1/voice/tts/<job>/000.wav",...}
+```
+El WAV se descarga con `GET /v1/voice/tts/{job_id}/{nombre}`. Los jobs se
+borran solos pasados `TTS_RETENTION_MINUTES` (30 por defecto).
+
 #### Descargar modelo de STT (faster-whisper)
 
 Modelo de transcripción de voz a texto (STT) que Raguaco usa para convertir la pregunta hablada del usuario en texto antes de consultar el RAG. Se ejecuta **en local**, sin API externa.
