@@ -248,7 +248,7 @@ class RAGService:
             'Responde a la pregunta del usuario usando ÚNICAMENTE los fragmentos (referencias) '
             'de documentos del siguiente contexto.',
             'Cita los fragmentos que uses con su número entre corchetes, por '
-            'ejemplo [1] o [2][3].',
+            'ejemplo [1] o [2][3] pero no los uses como parte de la conversación en el sentido de habla, ejemplo, decir algo como "En [3] también se agrup" porque carece de contexto en medio de la charla.',
             'Si el contexto no contiene información suficiente para responder, '
             'dilo explícitamente e indica que no se encontró evidencia relevante; '
             'no inventes datos ni respondas con conocimiento general.',

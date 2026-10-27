@@ -21,14 +21,14 @@ from kokoro_onnx.tokenizer import Tokenizer
 
 MODEL_DIR = Path(__file__).resolve().parents[1] / "ai-models" / "kokoro-82m"
 MODEL_PATH = MODEL_DIR / "onnx" / "model.onnx"
-VOICE_PATH = MODEL_DIR / "voices" / "if_sara.bin"  # voz femenina española
+VOICE_PATH = MODEL_DIR / "voices" / "ef_dora.bin"  # voz femenina española
 LANG = "es"
 OUTPUT = Path(__file__).with_name("salida.wav")
 
 SAMPLE_RATE = 24000
 PAUSA_SEGUNDOS = 0.25  # silencio entre lotes
 
-texto = "Sí, el contexto lo considera una droga. En [1] se describe el alcohol como una molécula que \"entra de inmediato al sistema\" y luego se refiere a ella como \"la droga\". En [2] se clasifica explícitamente como \"droga legal\", junto con el tabaco. En [4] se menciona que el alcohol genera cambios en las funciones cerebrales y se incluye dentro del grupo de \"todas las drogas\" que afectan la motivación. En [5] aparece como palabra clave asociada a dependencia y adicciones."
+texto = "Sí, los documentos la consideran una droga. En el estudio de 2003 sobre conductas adictivas en estudiantes de la Ciudad de México, se clasifica a la marihuana dentro de las drogas ilegales, ocupando el primer lugar en consumo entre hombres [1]. También aparece en el segundo lugar entre mujeres, después de los tranquilizantes [3]."
 
 # Las citas tipo "[1]" no deben leerse en voz alta: se eliminan antes de fonemizar.
 texto = re.sub(r"\[\s*\d+\s*\]", "", texto)
