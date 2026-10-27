@@ -143,7 +143,6 @@ class RAGService:
         la ruta los traduzca sin tumbar la aplicación (RNF6).
         """
         # obtenerHistorial(conversacionId) → historial
-        print(f'[rag] responder(«{pregunta}») — conversación {conversacion_id}, usuario {usuario_id}')
         historial = await self._conversation_service.obtener_historial(conversacion_id)
 
         # agregarMensaje(conversacionId, mensaje, referencias=None) → ok
@@ -160,7 +159,6 @@ class RAGService:
         # RF9: sin evidencia relevante, rechazo explícito en lugar de una
         # respuesta sin fundamento documental. No se invoca al LLM.
         if not resultados:
-            print('[rag] sin evidencia relevante (RF9) → rechazo explícito, sin invocar al LLM')
             mensaje = Mensaje(
                 conversacion_id=conversacion_id,
                 rol='asistente',
@@ -171,18 +169,13 @@ class RAGService:
             return RespuestaRAG(mensaje=mensaje, referencias=[])
 
         # generarRespuesta(prompt, contexto) → respuesta (desviación (b))
-        mensajes_llm = self._mensajes_llm(pregunta, historial, resultados)
-        print(f'[rag] construirContexto → {len(mensajes_llm)} mensajes para el LLM:')
-        for mensaje_llm in mensajes_llm:
-            print(f'    ({mensaje_llm["role"]}) {mensaje_llm["content"]}')
-        contenido = await self._llm.chat(mensajes_llm)
+        contenido = await self._llm.chat(self._mensajes_llm(pregunta, historial, resultados))
         if len(contenido) > MAX_CARACTERES_RESPUESTA:
             print(
                 f'[rag] respuesta de {len(contenido)} caracteres recortada '
                 f'a {MAX_CARACTERES_RESPUESTA}'
             )
             contenido = contenido[:MAX_CARACTERES_RESPUESTA].rstrip()
-        print(f'[rag] generarRespuesta → «{contenido}»')
 
         mensaje = Mensaje(
             conversacion_id=conversacion_id,
@@ -197,7 +190,6 @@ class RAGService:
 
         # agregarMensaje(conversacionId, mensaje, referencias) → ok
         await self._conversation_service.agregar_mensaje(conversacion_id, mensaje, referencias)
-        print(f'[rag] respuesta + fuentes → {len(referencias)} fuentes')
         return RespuestaRAG(mensaje=mensaje, referencias=referencias)
 
     def _mensajes_llm(

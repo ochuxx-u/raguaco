@@ -165,11 +165,6 @@ async def ask(
         ),
     ],
 ) -> RespuestaRAG:
-    destino = payload.conversacion_id if payload.conversacion_id is not None else 'conversación nueva'
-    print(
-        f'[api] POST / — consulta «{payload.contenido}» '
-        f'({destino}, usuario {payload.usuario_id})'
-    )
     if payload.conversacion_id is not None:
         conversacion = await conversaciones.get(payload.conversacion_id)
         if conversacion is None:
@@ -208,14 +203,12 @@ async def ask(
     opciones = {'filtros': filtros} if filtros else None
 
     try:
-        respuesta = await rag.responder(
+        return await rag.responder(
             payload.contenido,
             conversacion_id,
             usuario_id=payload.usuario_id,
             opciones=opciones,
         )
-        print(f'[api] POST / → 200 OK con {len(respuesta.referencias)} fuentes')
-        return respuesta
     except EmbeddingError as exc:
         # RNF6: el fallo de un servicio se traduce a un error HTTP concreto en
         # lugar de tumbar la aplicación.

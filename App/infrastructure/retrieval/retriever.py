@@ -54,25 +54,10 @@ class Retriever:
         filtros = opciones.get('filtros')
 
         embedding = await self._embeddings.embeber_consulta(consulta)
-        print(
-            f'[retriever] generarEmbedding(consulta) → vector de {len(embedding)} '
-            'dimensiones (prefijo «query: »)'
-        )
-        resultados = await self._vector_repo.buscar_similares(
+        return await self._vector_repo.buscar_similares(
             embedding,
             usuario_id=usuario_id,
             top_k=top_k,
             umbral=umbral,
             filtros=filtros,
         )
-        print(
-            f'[retriever] buscarSimilares(top_k={top_k}, umbral={umbral}, filtros={filtros}) '
-            f'→ {len(resultados)} fragmentos'
-        )
-        for numero, (chunk, similitud) in enumerate(resultados, start=1):
-            origen = f'documento {chunk.documento_id}'
-            if chunk.pagina is not None:
-                origen += f', página {chunk.pagina}'
-            texto = chunk.contenido if len(chunk.contenido) <= 80 else chunk.contenido[:80] + '…'
-            print(f'    [{numero}] {origen} · similitud {similitud:.3f} · «{texto}»')
-        return resultados

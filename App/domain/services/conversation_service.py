@@ -46,16 +46,11 @@ class ConversationService:
         conversacion = await self._conversaciones.create(
             Conversacion(usuario_id=usuario_id, titulo=titulo)
         )
-        print(
-            f'[conversacion] crearConversacion({usuario_id}, titulo={titulo!r}) → {conversacion.id}'
-        )
         return conversacion
 
     async def obtener_historial(self, conversacion_id: UUID) -> list[Mensaje]:
         """Historial de la conversación, del más antiguo al más reciente."""
-        historial = await self._mensajes.list(conversacion_id)
-        print(f'[conversacion] obtenerHistorial({conversacion_id}) → {len(historial)} mensajes')
-        return historial
+        return await self._mensajes.list(conversacion_id)
 
     async def agregar_mensaje(
         self,
@@ -75,8 +70,4 @@ class ConversationService:
         guardado = await self._mensajes.create(mensaje)
         if referencias:
             await self._referencias.create_many(referencias)
-        print(
-            f'[conversacion] agregarMensaje({conversacion_id}, rol={mensaje.rol}, '
-            f'referencias={len(referencias or [])}) → mensaje {guardado.id}'
-        )
         return guardado
