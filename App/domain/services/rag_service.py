@@ -95,7 +95,7 @@ MAX_MENSAJES_HISTORIAL = 10
 # Longitud máxima (en caracteres) de la respuesta del asistente: el flujo
 # recorta el texto generado por el LLM a este límite y el prompt de sistema
 # pide al modelo que lo respete.
-MAX_CARACTERES_RESPUESTA = 500
+MAX_CARACTERES_RESPUESTA = 1000
 
 # Roles de los mensajes del dominio (`Mensaje.rol`) → roles que entiende la API
 # del LLM (mensajes estilo OpenAI en `LLMService.chat`).
