@@ -19,7 +19,7 @@ VOICE_PATH = MODEL_DIR / "voices" / "ef_dora.bin"  # voz femenina española
 LANG = "es"
 OUTPUT = Path(__file__).with_name("salida.wav")
 
-texto = "Bienvenidos a Raguaco, esta es la voz de nuestro proyecto."
+texto = "Según los fragmentos de documentos proporcionados, **no se encontró información sobre regalos hacia los estudiantes**.\n\nLo más cercano en el contexto son los **estímulos y distinciones académicas** (Artículo 61 y 62), que incluyen reconocimientos mediante distinciones, becas e intercambios estudiantiles [1], pero no se menciona nada específico sobre \"regalos\"."
 
 # 1) Texto -> fonemas IPA (espeak-ng) y fonemas -> ids del modelo
 tokenizer = Tokenizer()

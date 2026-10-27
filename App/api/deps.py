@@ -12,10 +12,13 @@ from typing import Annotated
 from fastapi import Depends
 from psycopg import AsyncConnection
 
+from domain.services.conversation_service import ConversationService
 from domain.services.document_ingestion_service import DocumentIngestionService
+from domain.services.rag_service import RAGService
 from infrastructure.db.repositories.conversacion_repository import ConversacionRepository
 from infrastructure.db.repositories.documento_repository import DocumentoRepository
 from infrastructure.db.repositories.mensaje_repository import MensajeRepository
+from infrastructure.db.repositories.referencia_fuente_repository import ReferenciaFuenteRepository
 from infrastructure.db.repositories.usuario_repository import UsuarioRepository
 from infrastructure.db.session import pool
 from infrastructure.embeddings.embedding_service import EmbeddingService
@@ -23,6 +26,7 @@ from infrastructure.llm.llm_service import LLMService
 from infrastructure.loaders.chunking_service import ChunkingService
 from infrastructure.loaders.document_loader import DocumentLoader
 from infrastructure.loaders.text_cleaner import TextCleaner
+from infrastructure.retrieval.retriever import Retriever
 from infrastructure.storage.local_storage import StorageService
 from infrastructure.vector.pgvector_repository import VectorRepository
 
@@ -52,12 +56,19 @@ def get_mensaje_repository(conn: DbConnection) -> MensajeRepository:
     return MensajeRepository(conn)
 
 
+def get_referencia_fuente_repository(conn: DbConnection) -> ReferenciaFuenteRepository:
+    return ReferenciaFuenteRepository(conn)
+
+
 UsuarioRepositoryDep = Annotated[UsuarioRepository, Depends(get_usuario_repository)]
 DocumentoRepositoryDep = Annotated[DocumentoRepository, Depends(get_documento_repository)]
 ConversacionRepositoryDep = Annotated[
     ConversacionRepository, Depends(get_conversacion_repository)
 ]
 MensajeRepositoryDep = Annotated[MensajeRepository, Depends(get_mensaje_repository)]
+ReferenciaFuenteRepositoryDep = Annotated[
+    ReferenciaFuenteRepository, Depends(get_referencia_fuente_repository)
+]
 
 
 @lru_cache(maxsize=1)
@@ -141,3 +152,46 @@ def get_document_ingestion_service(
 DocumentIngestionServiceDep = Annotated[
     DocumentIngestionService, Depends(get_document_ingestion_service)
 ]
+
+
+def get_conversation_service(
+    conversaciones: ConversacionRepositoryDep,
+    mensajes: MensajeRepositoryDep,
+    referencias: ReferenciaFuenteRepositoryDep,
+) -> ConversationService:
+    """Servicio de conversaciones: historial, mensajes y sus fuentes."""
+    return ConversationService(
+        conversaciones=conversaciones,
+        mensajes=mensajes,
+        referencias=referencias,
+    )
+
+
+ConversationServiceDep = Annotated[ConversationService, Depends(get_conversation_service)]
+
+
+def get_retriever(
+    embeddings: EmbeddingServiceDep,
+    vector_repo: VectorRepositoryDep,
+) -> Retriever:
+    """Recuperador semántico: vectoriza la consulta y busca fragmentos."""
+    return Retriever(embeddings=embeddings, vector_repo=vector_repo)
+
+
+RetrieverDep = Annotated[Retriever, Depends(get_retriever)]
+
+
+def get_rag_service(
+    conversation_service: ConversationServiceDep,
+    llm: LLMServiceDep,
+    retriever: RetrieverDep,
+) -> RAGService:
+    """Orquestador del flujo RAG con sus piezas sustituibles."""
+    return RAGService(
+        conversation_service=conversation_service,
+        llm=llm,
+        retriever=retriever,
+    )
+
+
+RAGServiceDep = Annotated[RAGService, Depends(get_rag_service)]

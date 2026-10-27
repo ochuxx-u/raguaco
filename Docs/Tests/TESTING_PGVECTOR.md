@@ -383,11 +383,13 @@ curl -X POST http://127.0.0.1:8000/v1/models/conversations/ \
   -H 'Content-Type: application/json' \
   -d '{"usuario_id": "USUARIO_ID"}'
 
-# 3) mensaje (reemplazar USUARIO_ID y CONVERSACION_ID)
-curl -X POST http://127.0.0.1:8000/v1/queries/messages \
+# 3) mensaje (reemplazar CONVERSACION_ID); ruta de conversaciones, sin flujo RAG
+curl -X POST http://127.0.0.1:8000/v1/models/conversations/CONVERSACION_ID/messages \
   -H 'Content-Type: application/json' \
-  -d '{"usuario_id": "USUARIO_ID", "conversacion_id": "CONVERSACION_ID", "contenido": "¿Cuántos días de vacaciones me corresponden?"}'
+  -d '{"rol": "usuario", "contenido": "¿Cuántos días de vacaciones me corresponden?"}'
 ```
+
+Para probar el flujo RAG completo (requiere el modelo de embeddings y el LLM configurados), usar `POST /v1/queries/` con `{usuario_id, conversacion_id?, contenido}`: guarda el mensaje y devuelve la respuesta con sus fuentes.
 
 También se puede usar la documentación interactiva en el endpoint `.../docs` que integra FastAPI.
 

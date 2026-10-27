@@ -4,12 +4,14 @@
 diagrama de clases (`Docs/UML/imagenes/Diagrama_Clases.png`), de principio a fin:
 
 1. `obtenerHistorial(conversacionId)` → `historial` — `ConversationService`.
-2. `recuperar(consulta, usuarioId, opciones)` → `fragmentos con similitud` —
+2. `agregarMensaje(conversacionId, mensaje, referencias=None)` → `ok` —
+   `ConversationService`: guarda el mensaje del usuario en la conversación.
+3. `recuperar(consulta, usuarioId, opciones)` → `fragmentos con similitud` —
    `Retriever`. La consulta se transforma en un embedding (RF5) y se buscan los
    fragmentos más similares de los documentos del usuario.
-3. `generarRespuesta(prompt, contexto)` → `respuesta` — `LLMService` (desviación
+4. `generarRespuesta(prompt, contexto)` → `respuesta` — `LLMService` (desviación
    (b): en la práctica es `LLMService.chat(mensajes)`).
-4. `agregarMensaje(conversacionId, mensaje, referencias)` → `ok` —
+5. `agregarMensaje(conversacionId, mensaje, referencias)` → `ok` —
    `ConversationService`: la respuesta del asistente se guarda con las fuentes
    que la respaldan (RF8, RNF7).
 
@@ -26,8 +28,9 @@ Dos desviaciones conscientes respecto al diagrama:
     diagrama lo pide en `recuperar(consulta, usuarioId, opciones)` (para acotar
     la búsqueda a los documentos del usuario), pero `responder(pregunta,
     conversacionId)` no lo transporta. Mismo criterio que `usuario_id` en
-    `DocumentIngestionService.procesar_documento`. El mensaje del usuario no se
-    guarda aquí: lo publica antes `POST /v1/queries/messages`.
+    `DocumentIngestionService.procesar_documento`. El mensaje del usuario lo
+    guarda este servicio tras leer el historial, como muestra el diagrama
+    (`agregarMensaje(conversacionId, mensaje, referencias=None)`).
 
 (b) El `generarRespuesta(prompt, contexto)` del diagrama es en la práctica
     `LLMService.chat(mensajes)`, que recibe mensajes estilo OpenAI y solo llama
@@ -124,8 +127,10 @@ class RAGService:
         """Responde `pregunta` en la conversación y devuelve la respuesta con sus fuentes.
 
         Pasos, según el diagrama de clases: `obtenerHistorial(conversacionId)` →
-        `recuperar(consulta, usuarioId, opciones)` → `generarRespuesta(prompt,
-        contexto)` → `agregarMensaje(conversacionId, mensaje, referencias)`.
+        `agregarMensaje(conversacionId, mensaje, referencias=None)` (mensaje del
+        usuario) → `recuperar(consulta, usuarioId, opciones)` →
+        `generarRespuesta(prompt, contexto)` → `agregarMensaje(conversacionId,
+        mensaje, referencias)`.
 
         Devuelve la respuesta del asistente ya guardada en la conversación, con
         `referencias` vacías si no hubo evidencia relevante (RF9). Los errores de
@@ -133,7 +138,16 @@ class RAGService:
         la ruta los traduzca sin tumbar la aplicación (RNF6).
         """
         # obtenerHistorial(conversacionId) → historial
+        print(f'[rag] responder(«{pregunta}») — conversación {conversacion_id}, usuario {usuario_id}')
         historial = await self._conversation_service.obtener_historial(conversacion_id)
+
+        # agregarMensaje(conversacionId, mensaje, referencias=None) → ok
+        # El mensaje del usuario lo guarda el propio flujo, como en el diagrama.
+        await self._conversation_service.agregar_mensaje(
+            conversacion_id,
+            Mensaje(conversacion_id=conversacion_id, rol='usuario', contenido=pregunta),
+            None,
+        )
 
         # recuperar(consulta, usuarioId, opciones) → fragmentos con similitud
         resultados = await self._retriever.recuperar(pregunta, usuario_id, opciones)
@@ -141,6 +155,7 @@ class RAGService:
         # RF9: sin evidencia relevante, rechazo explícito en lugar de una
         # respuesta sin fundamento documental. No se invoca al LLM.
         if not resultados:
+            print('[rag] sin evidencia relevante (RF9) → rechazo explícito, sin invocar al LLM')
             mensaje = Mensaje(
                 conversacion_id=conversacion_id,
                 rol='asistente',
@@ -151,7 +166,12 @@ class RAGService:
             return RespuestaRAG(mensaje=mensaje, referencias=[])
 
         # generarRespuesta(prompt, contexto) → respuesta (desviación (b))
-        contenido = await self._llm.chat(self._mensajes_llm(pregunta, historial, resultados))
+        mensajes_llm = self._mensajes_llm(pregunta, historial, resultados)
+        print(f'[rag] construirContexto → {len(mensajes_llm)} mensajes para el LLM:')
+        for mensaje_llm in mensajes_llm:
+            print(f'    ({mensaje_llm["role"]}) {mensaje_llm["content"]}')
+        contenido = await self._llm.chat(mensajes_llm)
+        print(f'[rag] generarRespuesta → «{contenido}»')
 
         mensaje = Mensaje(
             conversacion_id=conversacion_id,
@@ -166,6 +186,7 @@ class RAGService:
 
         # agregarMensaje(conversacionId, mensaje, referencias) → ok
         await self._conversation_service.agregar_mensaje(conversacion_id, mensaje, referencias)
+        print(f'[rag] respuesta + fuentes → {len(referencias)} fuentes')
         return RespuestaRAG(mensaje=mensaje, referencias=referencias)
 
     def _mensajes_llm(
@@ -185,9 +206,9 @@ class RAGService:
         for mensaje in historial[-MAX_MENSAJES_HISTORIAL:]:
             mensajes.append({'role': ROLES_CHAT[mensaje.rol], 'content': mensaje.contenido})
 
-        # El mensaje del usuario ya suele estar en el historial (lo publica
-        # `POST /v1/queries/messages` antes de invocar a `responder`); si no lo
-        # está, se añade para que la pregunta nunca se pierda.
+        # El historial se lee antes de guardar el mensaje del usuario, así que la
+        # pregunta actual se añade al final para que nunca se pierda (y no se
+        # duplica si ya viniera en el historial).
         if not historial or (historial[-1].rol, historial[-1].contenido) != ('usuario', pregunta):
             mensajes.append({'role': 'user', 'content': pregunta})
         return mensajes
