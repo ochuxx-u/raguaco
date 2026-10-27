@@ -6,7 +6,7 @@ from psycopg import AsyncConnection
 
 from domain.models.conversacion import Conversacion
 
-_COLUMNS = 'id, usuario_id, fecha_creacion'
+_COLUMNS = 'id, usuario_id, titulo, fecha_creacion'
 
 
 class ConversacionRepository:
@@ -37,13 +37,14 @@ class ConversacionRepository:
     async def create(self, conversacion: Conversacion) -> Conversacion:
         cursor = await self._conn.execute(
             f"""
-            insert into conversacion (id, usuario_id, fecha_creacion)
-            values (%s, %s, %s)
+            insert into conversacion (id, usuario_id, titulo, fecha_creacion)
+            values (%s, %s, %s, %s)
             returning {_COLUMNS}
             """,
             (
                 conversacion.id,
                 conversacion.usuario_id,
+                conversacion.titulo,
                 conversacion.fecha_creacion,
             ),
         )

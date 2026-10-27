@@ -30,6 +30,26 @@ from infrastructure.llm.llm_service import LLMError
 
 router = APIRouter(prefix='/v1/queries', tags=['queries'])
 
+# Longitud máxima del título de una conversación nueva: los primeros 30
+# caracteres de la pregunta (o menos si la pregunta es más corta o el corte
+# cae a mitad de palabra).
+MAX_LONGITUD_TITULO = 30
+
+
+def _titulo_desde_pregunta(contenido: str) -> str:
+    """Deriva el título de la conversación nueva a partir de la pregunta.
+
+    Normaliza espacios y toma como máximo los primeros
+    `MAX_LONGITUD_TITULO` caracteres, retrocediendo al último espacio si el
+    corte cae a mitad de palabra.
+    """
+    texto = ' '.join(contenido.split())
+    if len(texto) <= MAX_LONGITUD_TITULO:
+        return texto
+    corte = texto[:MAX_LONGITUD_TITULO]
+    ultimo_espacio = corte.rfind(' ')
+    return corte[:ultimo_espacio] if ultimo_espacio > 0 else corte
+
 
 class FiltrosBusqueda(ModeloBase):
     """Filtros opcionales de la recuperación (RF6).
@@ -169,8 +189,13 @@ async def ask(
     else:
         # El diagrama admite `{pregunta, conversacionId?}`: sin conversación se
         # abre una nueva y `responder` deja la pregunta como su primer mensaje.
+        # El título se deriva de la pregunta (primeros 30 caracteres o menos)
+        # para que el campo `titulo` no quede vacío.
         try:
-            conversacion = await conversation_service.crear_conversacion(payload.usuario_id)
+            conversacion = await conversation_service.crear_conversacion(
+                payload.usuario_id,
+                titulo=_titulo_desde_pregunta(payload.contenido),
+            )
         except ForeignKeyViolation as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

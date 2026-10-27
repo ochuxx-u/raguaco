@@ -19,6 +19,13 @@ class Conversacion(ModeloBase):
 
     id: UUID = Field(default_factory=uuid4, description='Identificador único de la conversación')
     usuario_id: UUID = Field(description='Usuario dueño de la conversación')
+    titulo: str | None = Field(
+        default=None,
+        description=(
+            'Título de la conversación para el historial; al crearla desde una '
+            'consulta se toma de los primeros caracteres de la pregunta'
+        ),
+    )
     fecha_creacion: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description='Momento en que se creó la conversación',

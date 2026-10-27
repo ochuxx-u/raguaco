@@ -35,10 +35,20 @@ class ConversationService:
         self._mensajes = mensajes
         self._referencias = referencias
 
-    async def crear_conversacion(self, usuario_id: UUID) -> Conversacion:
-        """Abre una conversación nueva para el usuario."""
-        conversacion = await self._conversaciones.create(Conversacion(usuario_id=usuario_id))
-        print(f'[conversacion] crearConversacion({usuario_id}) → {conversacion.id}')
+    async def crear_conversacion(
+        self, usuario_id: UUID, *, titulo: str | None = None
+    ) -> Conversacion:
+        """Abre una conversación nueva para el usuario.
+
+        `titulo` es opcional: la ruta `POST /v1/queries/` lo deriva de la
+        pregunta para que el campo `titulo` de la conversación no quede vacío.
+        """
+        conversacion = await self._conversaciones.create(
+            Conversacion(usuario_id=usuario_id, titulo=titulo)
+        )
+        print(
+            f'[conversacion] crearConversacion({usuario_id}, titulo={titulo!r}) → {conversacion.id}'
+        )
         return conversacion
 
     async def obtener_historial(self, conversacion_id: UUID) -> list[Mensaje]:

@@ -81,6 +81,11 @@ MENSAJE_SIN_EVIDENCIA = (
 # los relevantes para la pregunta actual.
 MAX_MENSAJES_HISTORIAL = 10
 
+# Longitud máxima (en caracteres) de la respuesta del asistente: el flujo
+# recorta el texto generado por el LLM a este límite y el prompt de sistema
+# pide al modelo que lo respete.
+MAX_CARACTERES_RESPUESTA = 500
+
 # Roles de los mensajes del dominio (`Mensaje.rol`) → roles que entiende la API
 # del LLM (mensajes estilo OpenAI en `LLMService.chat`).
 ROLES_CHAT = {'sistema': 'system', 'usuario': 'user', 'asistente': 'assistant'}
@@ -171,6 +176,12 @@ class RAGService:
         for mensaje_llm in mensajes_llm:
             print(f'    ({mensaje_llm["role"]}) {mensaje_llm["content"]}')
         contenido = await self._llm.chat(mensajes_llm)
+        if len(contenido) > MAX_CARACTERES_RESPUESTA:
+            print(
+                f'[rag] respuesta de {len(contenido)} caracteres recortada '
+                f'a {MAX_CARACTERES_RESPUESTA}'
+            )
+            contenido = contenido[:MAX_CARACTERES_RESPUESTA].rstrip()
         print(f'[rag] generarRespuesta → «{contenido}»')
 
         mensaje = Mensaje(
@@ -222,6 +233,7 @@ class RAGService:
         """
         lineas = [
             'Eres el asistente documental de Raguaco.',
+            f'Responde de forma concisa, en máximo {MAX_CARACTERES_RESPUESTA} caracteres.',
             'Responde a la pregunta del usuario usando ÚNICAMENTE los fragmentos '
             'de documentos del siguiente contexto.',
             'Cita los fragmentos que uses con su número entre corchetes, por '

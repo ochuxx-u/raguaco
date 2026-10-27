@@ -15,3 +15,4 @@ venv
 .venv
 App/ai-models
 App/storage
+App/tests_models/*.wav
