@@ -10,7 +10,9 @@ diagrama de clases (`Docs/UML/imagenes/Diagrama_Clases.png`), de principio a fin
    `Retriever`. La consulta se transforma en un embedding (RF5) y se buscan los
    fragmentos más similares de los documentos del usuario.
 4. `generarRespuesta(prompt, contexto)` → `respuesta` — `LLMService` (desviación
-   (b): en la práctica es `LLMService.chat(mensajes)`).
+   (b): en la práctica es `LLMService.chat(mensajes)`). El texto se convierte a
+   texto plano (`infrastructure.llm.plain_text.limpiar_markdown`) antes de
+   guardarlo y devolverlo: el chat del frontend no interpreta Markdown.
 5. `agregarMensaje(conversacionId, mensaje, referencias)` → `ok` —
    `ConversationService`: la respuesta del asistente se guarda con las fuentes
    que la respaldan (RF8, RNF7).
@@ -63,6 +65,7 @@ from domain.models.chunk import Chunk
 from domain.models.mensaje import Mensaje
 from domain.models.referencia_fuente import ReferenciaFuente
 from infrastructure.llm.llm_service import LLMService
+from infrastructure.llm.plain_text import limpiar_markdown
 
 if TYPE_CHECKING:
     from domain.services.conversation_service import ConversationService
@@ -74,6 +77,14 @@ MENSAJE_SIN_EVIDENCIA = (
     'No he encontrado información suficientemente relacionada con tu pregunta '
     'en tus documentos, así que no puedo responderla con fundamento documental. '
     'Prueba a reformularla o a subir documentos que traten sobre el tema.'
+)
+
+# Sustituto cuando la respuesta del LLM queda vacía después de quitarle la
+# notación Markdown (p. ej. solo devolvió una valla de código sin texto): un
+# mensaje de asistente no puede guardarse vacío (`Mensaje.contenido`).
+MENSAJE_RESPUESTA_VACIA = (
+    'El asistente no ha devuelto una respuesta legible con los documentos '
+    'recuperados. Prueba a reformular la pregunta.'
 )
 
 # Cuántos mensajes del historial se envían al LLM como contexto conversacional.
@@ -169,7 +180,12 @@ class RAGService:
             return RespuestaRAG(mensaje=mensaje, referencias=[])
 
         # generarRespuesta(prompt, contexto) → respuesta (desviación (b))
-        contenido = await self._llm.chat(self._mensajes_llm(pregunta, historial, resultados))
+        # El texto del modelo se convierte a texto plano antes de guardarlo: el
+        # chat del frontend no interpreta Markdown y mostraría los asteriscos,
+        # las almohadillas o los enlaces tal cual. La limpieza va antes del
+        # recorte para no dejar marcas a medias y conserva las citas `[n]` (RF8).
+        respuesta = await self._llm.chat(self._mensajes_llm(pregunta, historial, resultados))
+        contenido = limpiar_markdown(respuesta) or MENSAJE_RESPUESTA_VACIA
         if len(contenido) > MAX_CARACTERES_RESPUESTA:
             print(
                 f'[rag] respuesta de {len(contenido)} caracteres recortada '
@@ -226,7 +242,10 @@ class RAGService:
         lineas = [
             'Eres el asistente documental de Raguaco.',
             f'Responde de forma concisa, en máximo {MAX_CARACTERES_RESPUESTA} caracteres.',
-            'Responde a la pregunta del usuario usando ÚNICAMENTE los fragmentos '
+            'Escribe en texto plano, sin notación Markdown (sin negritas, encabezados, '
+            'viñetas, tablas, bloques de código ni enlaces); conserva las citas [n] '
+            'del contexto.',
+            'Responde a la pregunta del usuario usando ÚNICAMENTE los fragmentos (referencias) '
             'de documentos del siguiente contexto.',
             'Cita los fragmentos que uses con su número entre corchetes, por '
             'ejemplo [1] o [2][3].',

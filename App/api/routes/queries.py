@@ -112,7 +112,9 @@ class ConsultaPeticion(ModeloBase):
     description=(
         'Recibe el mensaje del usuario, lo guarda en la conversación y responde '
         'con fuentes documentales (RF5, RF8). Si no se indica `conversacion_id`, '
-        'se crea una conversación nueva. `filtros` restringe opcionalmente la '
+        'se crea una conversación nueva. La respuesta se devuelve en texto plano '
+        '(sin notación Markdown) conservando las citas `[n]` de las fuentes. '
+        '`filtros` restringe opcionalmente la '
         'recuperación a ciertos documentos (`documento_ids`), a una `categoria` o '
         'a `metadatos` del fragmento (RF6); la búsqueda nunca sale de los '
         'documentos del usuario. Sin evidencia relevante en los documentos del '

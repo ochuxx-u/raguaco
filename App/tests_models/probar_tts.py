@@ -15,11 +15,11 @@ from kokoro_onnx.tokenizer import Tokenizer
 
 MODEL_DIR = Path(__file__).resolve().parents[1] / "ai-models" / "kokoro-82m"
 MODEL_PATH = MODEL_DIR / "onnx" / "model.onnx"
-VOICE_PATH = MODEL_DIR / "voices" / "ef_dora.bin"  # voz femenina española
+VOICE_PATH = MODEL_DIR / "voices" / "if_sara.bin"  # voz femenina española
 LANG = "es"
 OUTPUT = Path(__file__).with_name("salida.wav")
 
-texto = "Según los fragmentos de documentos proporcionados, **no se encontró información sobre regalos hacia los estudiantes**.\n\nLo más cercano en el contexto son los **estímulos y distinciones académicas** (Artículo 61 y 62), que incluyen reconocimientos mediante distinciones, becas e intercambios estudiantiles [1], pero no se menciona nada específico sobre \"regalos\"."
+texto = "Si no estás de acuerdo con la revisión del profesor, puedes solicitar un segundo calificador ante el decano o director de escuela/programa, sustentando la petición por escrito, clara y precisa, dentro de los tres días hábiles siguientes a la publicación del resultado de la revisión. En la revisión se podrá disminuir o aumentar la calificación obtenida [3]."
 
 # 1) Texto -> fonemas IPA (espeak-ng) y fonemas -> ids del modelo
 tokenizer = Tokenizer()
