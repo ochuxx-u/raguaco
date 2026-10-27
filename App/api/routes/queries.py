@@ -21,10 +21,16 @@ from fastapi import APIRouter, Body, HTTPException, status
 from psycopg.errors import ForeignKeyViolation
 from pydantic import ConfigDict, Field
 
-from api.deps import ConversacionRepositoryDep, ConversationServiceDep, RAGServiceDep
+from api.deps import (
+    ConversacionRepositoryDep,
+    ConversationServiceDep,
+    DocumentoRepositoryDep,
+    RAGServiceDep,
+)
 from domain.models.base import ModeloBase
 from domain.models.mensaje import MAX_LONGITUD_CONSULTA
 from domain.services.rag_service import RespuestaRAG
+from infrastructure.db.repositories.documento_repository import DocumentoRepository
 from infrastructure.embeddings.embedding_service import EmbeddingError
 from infrastructure.llm.llm_service import LLMError
 
@@ -51,6 +57,36 @@ def _titulo_desde_pregunta(contenido: str) -> str:
     return corte[:ultimo_espacio] if ultimo_espacio > 0 else corte
 
 
+async def _validar_documentos_filtrados(
+    documentos: DocumentoRepository,
+    documento_ids: list[UUID],
+    usuario_id: UUID,
+) -> None:
+    """Comprueba que cada documento del filtro exista y sea del usuario (RF6).
+
+    Sin esta comprobación el `where` de la búsqueda descarta los documentos
+    ajenos y la consulta acaba en el rechazo por falta de evidencia (RF9), lo
+    que oculta el error: el filtro pedía un documento que no se puede usar. Se
+    responde igual que con `conversacion_id`: 404 si no existe y 403 si no
+    pertenece al usuario que pregunta.
+    """
+    for documento_id in dict.fromkeys(documento_ids):
+        documento = await documentos.get(documento_id)
+        if documento is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'No existe un documento con el id {documento_id}',
+            )
+        if documento.usuario_id != usuario_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f'El documento {documento_id} no pertenece '
+                    f'al usuario {usuario_id}'
+                ),
+            )
+
+
 class FiltrosBusqueda(ModeloBase):
     """Filtros opcionales de la recuperación (RF6).
 
@@ -58,7 +94,9 @@ class FiltrosBusqueda(ModeloBase):
     `categoria` del documento o a `metadatos` del fragmento (contención JSONB).
     Se combinan entre sí y todos son opcionales: sin `filtros` se busca en todos
     los documentos del usuario. El scope por usuario se aplica siempre en la
-    consulta SQL, así que un id de otro usuario no devuelve nada.
+    consulta SQL; además, cada id de `documento_ids` se valida antes de buscar:
+    si el documento no existe la petición falla con 404 y si es de otro usuario,
+    con 403.
     """
 
     # `forbid`: una clave mal escrita falla con 422 en vez de buscar sin filtro.
@@ -117,13 +155,15 @@ class ConsultaPeticion(ModeloBase):
         '`filtros` restringe opcionalmente la '
         'recuperación a ciertos documentos (`documento_ids`), a una `categoria` o '
         'a `metadatos` del fragmento (RF6); la búsqueda nunca sale de los '
-        'documentos del usuario. Sin evidencia relevante en los documentos del '
+        'documentos del usuario. Cada id de `documento_ids` se valida antes de '
+        'buscar: si el documento no existe se responde 404 y si pertenece a otro '
+        'usuario, 403. Sin evidencia relevante en los documentos del '
         'usuario, el sistema se niega explícitamente, sin invocar al LLM y sin '
         'referencias (RF9).'
     ),
     responses={
-        403: {'description': 'La conversación no pertenece al usuario indicado'},
-        404: {'description': 'No existe la conversación o el usuario indicado'},
+        403: {'description': 'La conversación o algún documento del filtro no pertenecen al usuario'},
+        404: {'description': 'No existe la conversación, el usuario o algún documento del filtro'},
         422: {'description': 'Faltan datos o no son válidos'},
         502: {'description': 'El LLM no pudo generar la respuesta'},
         503: {'description': 'El modelo de embeddings no está disponible'},
@@ -133,6 +173,7 @@ async def ask(
     rag: RAGServiceDep,
     conversaciones: ConversacionRepositoryDep,
     conversation_service: ConversationServiceDep,
+    documentos: DocumentoRepositoryDep,
     payload: Annotated[
         ConsultaPeticion,
         Body(
@@ -167,6 +208,16 @@ async def ask(
         ),
     ],
 ) -> RespuestaRAG:
+    # RF6: un `documento_id` filtrado debe existir y ser del usuario. Sin esta
+    # comprobación la búsqueda lo descartaría en silencio y la consulta acabaría
+    # en el rechazo por falta de evidencia (RF9) en vez de señalar el error.
+    if payload.filtros is not None and payload.filtros.documento_ids:
+        await _validar_documentos_filtrados(
+            documentos,
+            payload.filtros.documento_ids,
+            payload.usuario_id,
+        )
+
     if payload.conversacion_id is not None:
         conversacion = await conversaciones.get(payload.conversacion_id)
         if conversacion is None:
