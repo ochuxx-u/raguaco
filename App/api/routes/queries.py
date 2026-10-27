@@ -17,7 +17,7 @@ from pydantic import Field
 
 from api.deps import ConversacionRepositoryDep, MensajeRepositoryDep
 from domain.models.base import ModeloBase
-from domain.models.mensaje import Mensaje
+from domain.models.mensaje import MAX_LONGITUD_CONSULTA, Mensaje
 
 router = APIRouter(prefix='/v1/queries', tags=['queries'])
 
@@ -27,12 +27,18 @@ class PublicarMensajePeticion(ModeloBase):
 
     El `id` y la `fecha` del mensaje los asigna el servidor en UTC y el `rol` es
     siempre `usuario`; `usuario_id` no se guarda en el mensaje, solo sirve para
-    comprobar que la conversación pertenece a quien publica.
+    comprobar que la conversación pertenece a quien publica. El `contenido` es la
+    consulta del usuario (RF5) y se acota a `MAX_LONGITUD_CONSULTA` caracteres,
+    el mismo límite que el campo de texto del chat en el frontend.
     """
 
     usuario_id: UUID = Field(description='Usuario que publica el mensaje')
     conversacion_id: UUID = Field(description='Conversación donde se publica el mensaje')
-    contenido: str = Field(min_length=1, description='Texto del mensaje')
+    contenido: str = Field(
+        min_length=1,
+        max_length=MAX_LONGITUD_CONSULTA,
+        description=f'Texto del mensaje (máximo {MAX_LONGITUD_CONSULTA} caracteres)',
+    )
 
 
 @router.post(

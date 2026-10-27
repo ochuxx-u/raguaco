@@ -3,6 +3,14 @@ import './ChatInput.css'
 
 const MAX_TEXTAREA_HEIGHT = 132
 
+// Máximo de caracteres de una consulta (RF5). Debe coincidir con
+// `MAX_LONGITUD_CONSULTA` en `App/domain/models/mensaje.py` y con el
+// `max_length` de `PublicarMensajePeticion` en `App/api/routes/queries.py`.
+const MAX_MESSAGE_LENGTH = 512
+
+// A partir de cuántos caracteres restantes se muestra el contador.
+const COUNTER_REMAINING_THRESHOLD = 100
+
 function ChatInput({
   disabled = false,
   isAttaching = false,
@@ -14,6 +22,9 @@ function ChatInput({
   const textareaRef = useRef(null)
   const fileInputRef = useRef(null)
   const canSend = value.trim().length > 0 && !disabled && !isSending
+  const remaining = MAX_MESSAGE_LENGTH - value.length
+  const showCounter = remaining <= COUNTER_REMAINING_THRESHOLD
+  const isAtLimit = remaining <= 0
   const attachLabel = isAttaching ? 'Adjuntando documento' : 'Adjuntar documento'
 
   useEffect(() => {
@@ -88,6 +99,7 @@ function ChatInput({
         ref={textareaRef}
         rows="1"
         value={value}
+        maxLength={MAX_MESSAGE_LENGTH}
         placeholder="Pregunta algo sobre tus documentos…"
         aria-label="Escribe tu pregunta"
         onChange={(event) => setValue(event.target.value)}
@@ -136,6 +148,18 @@ function ChatInput({
           <path d="m22 2-7 20-4-9-9-4z" />
         </svg>
       </button>
+
+      {showCounter && (
+        <span
+          className={
+            isAtLimit
+              ? 'chat-input__counter chat-input__counter--limit'
+              : 'chat-input__counter'
+          }
+        >
+          {value.length}/{MAX_MESSAGE_LENGTH}
+        </span>
+      )}
     </div>
   )
 }
