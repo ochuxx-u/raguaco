@@ -159,7 +159,7 @@ Píldora (`border-radius: 99px`, borde 1px, fondo transparente, `font-size: 12px
   - Cabecera: logo "RAGUACO AI" (cuadrado azul + texto, "AI" en cian).
   - Pie: indicador "Sistema activo" con punto cian (elemento del mockup reubicado aquí al desaparecer la barra superior).
   - **Colapsable:** expandido ~240px (icono + etiqueta), colapsado ~72px (solo iconos, con tooltip). Botón de alternar visible en el propio sidebar. El estado vive en `App.jsx` (sin persistencia por ahora).
-- **Usuario como botón flotante** (modificación explícita): botón circular fijo, esquina inferior derecha, visible en todas las pantallas (incluida Landing). Estilo según el círculo de usuario del mockup: fondo `--color-surface-deep`, borde `--color-interactive`. Al hacer clic abre un menú pequeño (nombre/email de mock, acciones placeholder). **El círculo de usuario de la barra superior del mockup no se duplica.**
+- **Usuario como botón flotante** (modificación explícita): botón circular fijo, esquina inferior derecha, visible en todas las pantallas (incluida Landing). Estilo según el círculo de usuario del mockup: fondo `--color-surface-deep`, borde `--color-interactive`. Muestra las iniciales del perfil activo y, al hacer clic, un menú con nombre/email reales y "Cerrar sesión". Sin perfil activo muestra "Invitado" / "Sin perfil seleccionado" y la acción "Elegir perfil". **El círculo de usuario de la barra superior del mockup no se duplica.**
 - **Sin scroll horizontal** en ninguna pantalla; el scroll vertical ocurre dentro del contenedor de contenido de cada pantalla.
 
 ### 6.2 Landing aparte
@@ -210,6 +210,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 - **Barra superior** (como el mockup): logo "RAGUACO AI", enlaces Dashboard · Documentos · Chat · Historial · Voz, indicador "Sistema activo".
 - **Hero:** etiqueta "PLATAFORMA DE CONOCIMIENTO CON IA"; título "RAGUACO AI" (con "AI" en cian); subtítulo "Conversa con tus documentos mediante inteligencia artificial"; párrafo "Carga tus archivos, vectorízalos automáticamente y haz preguntas en lenguaje natural, por texto o voz, con respuestas fundamentadas en fuentes."
 - **Botones:** "Comenzar ahora" (primario, con glow) y "Ver demo" (secundario con borde).
+- **Selección de perfil:** si no hay sesión activa, "Comenzar ahora" (y los enlaces de la barra superior) abren el modal **"Elegir perfil"** con los usuarios registrados en el backend (`GET /v1/models/users/`). Al elegir uno se guarda la sesión en `localStorage` (`raguaco.session`) y se entra a la vista solicitada (Dashboard por defecto). Al recargar, la sesión se restaura y se abre directamente el Dashboard. "Cerrar sesión" borra la sesión y vuelve a la Landing. Esta selección es local: **no autentica** al usuario.
 - **Tarjetas flotantes:** "Documento cargado" ("manual_politicas.pdf · 48 págs."), "Respuesta con fuentes" ("“Según la página 12…” · relevancia 94%"), "Modo voz" ("Habla con tu base de conocimiento").
   - Nota: el texto de la tarjeta "Respuesta con fuentes" se conserva como copy decorativo; ver regla de score en 8.4/8.7.
 - **Franja de pipeline** (se conserva; la modificación de eliminación aplica **solo al Dashboard**): `Upload → Process → Vectorize → Retrieve → Respond` como píldoras.
@@ -219,8 +220,8 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 
 - **Sin bloque "Pipeline RAG"** (eliminado por modificación explícita).
 - Cabecera: "Bienvenido de nuevo" + "Tu base de conocimiento está lista para responder." + botón "+ Subir nuevo documento".
-- **Tarjetas de estadísticas** (valores de mocks): "Documentos cargados" 24 · "Conversaciones" 58 · "Chunks generados" 3.412 · "Estado del sistema" "Operativo".
-- **"Actividad reciente"**: lista de eventos con ejemplos del mockup: "manual_politicas.pdf — vectorización completada", "Conversación “Vacaciones y permisos” — 6 mensajes", "contrato_proveedor.docx — procesando 62%".
+- **Tarjetas de estadísticas:** "Documentos cargados" · "Conversaciones" · "Chunks generados" · "Estado del sistema" ("Operativo"). Mientras no haya datos, las cifras muestran `0`.
+- **"Actividad reciente"**: lista de eventos; sin datos muestra "Aún no hay actividad reciente."
 - Acción "+ Subir nuevo documento" → vista Documentos (flujo de carga).
 
 ### 8.3 Documentos (`DocumentsPage`)
@@ -286,20 +287,18 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 | Archivo | Responsabilidad | Endpoints futuros (referencia) |
 | :--- | :--- | :--- |
 | `http.js` | Wrapper de `fetch`: base URL (`VITE_API_URL`), JSON, errores normalizados | — |
+| `usersService.js` | Perfiles registrados para la selección de perfil | `GET /v1/models/users/` |
 | `documentsService.js` | Listar, consultar, subir, eliminar documentos; estado de procesamiento | `GET /documents`, `GET /documents/{id}`, `POST /documents`, `DELETE /documents/{id}` |
 | `queriesService.js` | Preguntas del chat (RAG) | `POST /query` con `{ pregunta, conversacionId? }` → `{ respuesta, fuentes }` |
 | `conversationsService.js` | Conversaciones e historial de mensajes | `GET/POST /conversations`, `GET /conversations/{id}/messages` |
 | `voiceService.js` | Voz (simulada en esta fase) | `POST /voice` (procesarVoz del diagrama) |
 | `dashboardService.js` | Resumen del Dashboard | Compone con documentos + conversaciones; endpoint agregado solo si el backend lo ofrece |
 
-- `src/config.js` expone `USE_MOCKS` (hoy `true`) y la URL base. Cambiar a API real = cambiar implementación interna de cada servicio, **sin tocar componentes**.
+- `src/config.js` expone `API_BASE_URL` desde `VITE_API_URL`; en desarrollo se deja vacía y Vite proxya `/v1` a `http://127.0.0.1:8000`. Cambiar de API = cambiar la implementación interna de cada servicio, **sin tocar componentes**.
 
 ### 9.3 Mocks (`src/mocks/`)
 
-- Aislados aquí: semillas de datos + `mockBackend.js`.
-- `mockBackend.js` simula: latencia artificial (300–800ms), mutaciones (subir → Pendiente → Procesando con progreso → Listo; eliminar), respuestas del chat con y sin evidencia, y datos del Dashboard. Trabaja sobre **copias** de las semillas.
-- Semillas de referencia (extraídas del mockup): 4 documentos (ver 8.3), 3 conversaciones (ver 8.5), estadísticas 24/58/3.412/Operativo, conversación de ejemplo del Chat ("¿Cuántos días de vacaciones corresponden tras un año de servicio?" con fuentes en pág. 12 y 13), evidencia `manual_politicas.pdf · Sección 4.2 · Página 12 · Chunk #87`.
-- Al existir el backend, `src/mocks/` se elimina sin tocar componentes.
+- **Eliminados.** Las vistas arrancan sin datos y muestran sus estados vacíos; las acciones que aún no tienen endpoint conectado responden con un error controlado. La integración real se hará servicio por servicio.
 
 ### 9.4 Estados de documento (contrato UI ↔ backend)
 

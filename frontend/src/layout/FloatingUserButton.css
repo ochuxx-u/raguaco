@@ -33,6 +33,17 @@
   stroke-linejoin: round;
 }
 
+.floating-user__button-initials {
+  font-size: var(--font-size-15);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.floating-user__button-initials--guest {
+  color: var(--color-text-muted);
+}
+
 .floating-user__menu {
   position: absolute;
   right: 0;

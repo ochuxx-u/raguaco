@@ -2,21 +2,23 @@ import RecentActivity from '../components/dashboard/RecentActivity.jsx'
 import StatCard from '../components/dashboard/StatCard.jsx'
 import './DashboardPage.css'
 
+// Sin mocks: la base de conocimiento arranca vacía. Cuando exista la API, estas
+// cifras deben calcularse con documentsService y conversationsService.
 const stats = [
   {
     id: 'documents',
     label: 'Documentos cargados',
-    value: '24',
+    value: '0',
   },
   {
     id: 'conversations',
     label: 'Conversaciones',
-    value: '58',
+    value: '0',
   },
   {
     id: 'chunks',
     label: 'Chunks generados',
-    value: '3.412',
+    value: '0',
     tone: 'accent',
   },
   {
@@ -27,20 +29,7 @@ const stats = [
   },
 ]
 
-const recentActivity = [
-  {
-    id: 'manual-politicas',
-    message: 'manual_politicas.pdf — vectorización completada',
-  },
-  {
-    id: 'vacaciones-permisos',
-    message: 'Conversación “Vacaciones y permisos” — 6 mensajes',
-  },
-  {
-    id: 'contrato-proveedor',
-    message: 'contrato_proveedor.docx — procesando 62%',
-  },
-]
+const recentActivity = []
 
 function DashboardPage({ onNavigate = () => {} }) {
   return (

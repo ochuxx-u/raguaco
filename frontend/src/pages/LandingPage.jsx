@@ -9,7 +9,7 @@ const navItems = [
 ]
 const pipelineSteps = ['Upload', 'Process', 'Vectorize', 'Retrieve', 'Respond']
 
-function LandingPage({ onNavigate = () => {} }) {
+function LandingPage({ onNavigate = () => {}, onStart = () => {} }) {
   const handleNavigation = (event, view) => {
     event.preventDefault()
     onNavigate(view)
@@ -88,7 +88,7 @@ function LandingPage({ onNavigate = () => {} }) {
             <button
               className="landing__button landing__button--primary"
               type="button"
-              onClick={() => onNavigate('dashboard')}
+              onClick={onStart}
             >
               Comenzar ahora
             </button>

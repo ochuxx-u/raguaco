@@ -70,6 +70,12 @@ function EvidencePage({
           </div>
         )}
 
+        {!isLoading && !error && !evidence && (
+          <div className="evidence-page__state">
+            <p>Aún no hay evidencia disponible.</p>
+          </div>
+        )}
+
         {!isLoading && !error && evidence && (
           <div className="evidence-page__card">
             <EvidenceViewer source={evidence} />

@@ -13,6 +13,19 @@ router = APIRouter(prefix='/v1/models/users', tags=['users'])
 
 @router.get(
     '/',
+    response_model=list[Usuario],
+    summary='Listar usuarios',
+    description=(
+        'Devuelve los perfiles registrados, ordenados por nombre. Se usa en la '
+        'selección de perfil del frontend.'
+    ),
+)
+async def list_users(repo: UsuarioRepositoryDep) -> list[Usuario]:
+    return await repo.list()
+
+
+@router.get(
+    '/by-email',
     response_model=Usuario,
     summary='Buscar usuario por email',
     description='Devuelve el usuario cuyo email coincide con el indicado.',
@@ -21,7 +34,7 @@ router = APIRouter(prefix='/v1/models/users', tags=['users'])
         422: {'description': 'El email no tiene un formato válido'},
     },
 )
-async def get_user(
+async def get_user_by_email(
     repo: UsuarioRepositoryDep,
     email: Annotated[
         EmailStr,

@@ -1,22 +1,18 @@
-import {
-  getChatConversationById,
-  getChatMessages,
-  listChatConversations,
-} from '../mocks/mockBackend.js'
+// Punto único de acceso a conversaciones e historial (FRONTEND_SPEC §9.2).
+// Sin mocks: el historial arranca vacío hasta conectar la API de FastAPI.
+const NOT_CONNECTED = 'La conexión con el backend todavía no está disponible.'
 
-// Punto único de acceso a conversaciones e historial. Las firmas se mantienen
-// preparadas para sustituir la implementación mock por la API de FastAPI.
 const conversationsService = {
-  list() {
-    return listChatConversations()
+  async list() {
+    return []
   },
 
-  getById(id) {
-    return getChatConversationById(id)
+  async getById() {
+    throw new Error(NOT_CONNECTED)
   },
 
-  getMessages(id) {
-    return getChatMessages(id)
+  async getMessages(id) {
+    return []
   },
 }
 

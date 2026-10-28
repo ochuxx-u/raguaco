@@ -1,13 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import './FloatingUserButton.css'
 
-const mockUser = {
-  name: 'Ana Torres',
-  email: 'ana.torres@raguaco.ai',
-  initials: 'AT',
+// Iniciales del nombre: primera letra de las dos primeras palabras.
+function getInitials(nombre) {
+  const words = String(nombre ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (words.length === 0) {
+    return '?'
+  }
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase()
 }
 
-function FloatingUserButton() {
+function FloatingUserButton({
+  user = null,
+  onLogout = () => {},
+  onOpenProfileSelector = () => {},
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef(null)
   const buttonRef = useRef(null)
@@ -40,7 +56,28 @@ function FloatingUserButton() {
   }, [isOpen])
 
   const closeMenu = () => setIsOpen(false)
+
+  // Al cerrar el menú desde una acción, el foco vuelve al botón flotante
+  // (el botón de la acción desaparece y perdería el foco).
+  const closeMenuAndFocus = () => {
+    closeMenu()
+    buttonRef.current?.focus()
+  }
+
+  const handleLogout = () => {
+    closeMenuAndFocus()
+    onLogout()
+  }
+
+  const handleOpenProfileSelector = () => {
+    closeMenuAndFocus()
+    onOpenProfileSelector()
+  }
+
   const menuLabel = isOpen ? 'Cerrar menú de usuario' : 'Abrir menú de usuario'
+  const initials = user ? getInitials(user.nombre) : '?'
+  const displayName = user?.nombre || 'Invitado'
+  const displayEmail = user?.email || 'Sin perfil seleccionado'
 
   return (
     <div className="floating-user" ref={containerRef}>
@@ -53,29 +90,32 @@ function FloatingUserButton() {
         >
           <div className="floating-user__header">
             <span className="floating-user__avatar" aria-hidden="true">
-              {mockUser.initials}
+              {initials}
             </span>
             <div className="floating-user__identity">
-              <p className="floating-user__name">{mockUser.name}</p>
-              <p className="floating-user__email">{mockUser.email}</p>
+              <p className="floating-user__name">{displayName}</p>
+              <p className="floating-user__email">{displayEmail}</p>
             </div>
           </div>
 
           <div className="floating-user__actions">
-            <button
-              className="floating-user__action"
-              type="button"
-              onClick={closeMenu}
-            >
-              Mi perfil
-            </button>
-            <button
-              className="floating-user__action"
-              type="button"
-              onClick={closeMenu}
-            >
-              Cerrar sesión
-            </button>
+            {user ? (
+              <button
+                className="floating-user__action"
+                type="button"
+                onClick={handleLogout}
+              >
+                Cerrar sesión
+              </button>
+            ) : (
+              <button
+                className="floating-user__action"
+                type="button"
+                onClick={handleOpenProfileSelector}
+              >
+                Elegir perfil
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -90,18 +130,14 @@ function FloatingUserButton() {
         aria-controls="floating-user-menu"
         onClick={() => setIsOpen((open) => !open)}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
+        <span
+          className={`floating-user__button-initials${
+            user ? '' : ' floating-user__button-initials--guest'
+          }`}
           aria-hidden="true"
         >
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21a8 8 0 0 1 16 0" />
-        </svg>
+          {initials}
+        </span>
       </button>
     </div>
   )

@@ -87,7 +87,9 @@ function ChatDocumentsPanel({
               </ul>
             ) : (
               <p className="chat-documents__empty">
-                No hay documentos en esta categoría.
+                {categories.length === 0
+                  ? 'Aún no hay documentos cargados.'
+                  : 'No hay documentos en esta categoría.'}
               </p>
             )}
           </>

@@ -15,6 +15,14 @@ class UsuarioRepository:
     def __init__(self, conn: AsyncConnection) -> None:
         self._conn = conn
 
+    async def list(self) -> list[Usuario]:
+        """Devuelve todos los usuarios ordenados por nombre."""
+        cursor = await self._conn.execute(
+            f'select {_COLUMNS} from usuario order by lower(nombre), email'
+        )
+        rows = await cursor.fetchall()
+        return [Usuario.model_validate(row) for row in rows]
+
     async def get(self, usuario_id: UUID) -> Usuario | None:
         cursor = await self._conn.execute(
             f'select {_COLUMNS} from usuario where id = %s',

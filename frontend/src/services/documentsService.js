@@ -1,27 +1,23 @@
-import {
-  getDocumentById,
-  listDocuments,
-  removeDocument,
-  uploadDocument,
-} from '../mocks/mockBackend.js'
+// Punto único de acceso a Documentos (FRONTEND_SPEC §9.2).
+// Los mocks se eliminaron al iniciar la conexión con el backend: por ahora la
+// aplicación arranca sin datos hasta sustituir estas funciones por la API.
+const NOT_CONNECTED = 'La conexión con el backend todavía no está disponible.'
 
-// Punto único de acceso a Documentos. La implementación interna se sustituirá
-// por los endpoints de FastAPI sin cambiar la firma consumida por las páginas.
 const documentsService = {
-  list() {
-    return listDocuments()
+  async list() {
+    return []
   },
 
-  getById(id) {
-    return getDocumentById(id)
+  async getById() {
+    throw new Error(NOT_CONNECTED)
   },
 
-  upload(file, metadata) {
-    return uploadDocument(file, metadata)
+  async upload() {
+    throw new Error(NOT_CONNECTED)
   },
 
-  remove(id) {
-    return removeDocument(id)
+  async remove() {
+    throw new Error(NOT_CONNECTED)
   },
 }
 

@@ -18,6 +18,13 @@
   margin-top: 6px;
 }
 
+.recent-activity__empty {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-13);
+  line-height: 1.6;
+}
+
 .recent-activity__item {
   color: var(--color-text-muted);
   font-size: var(--font-size-13);
