@@ -52,6 +52,14 @@ class ConversationService:
         """Historial de la conversación, del más antiguo al más reciente."""
         return await self._mensajes.list(conversacion_id)
 
+    async def obtener(self, conversacion_id: UUID) -> Conversacion | None:
+        """Conversación por id, o `None` si no existe.
+
+        La usan los flujos que reciben un `conversacion_id` opcional (p. ej.
+        voz) para validar existencia y pertenencia antes de responder.
+        """
+        return await self._conversaciones.get(conversacion_id)
+
     async def agregar_mensaje(
         self,
         conversacion_id: UUID,

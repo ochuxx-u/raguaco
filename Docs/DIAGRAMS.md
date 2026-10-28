@@ -91,6 +91,9 @@ rag_app/
 │   │   ├── tts/
 │   │   │   ├── kokoro_tts.py
 │   │   │   └── tts_text.py
+│   │   ├── stt/
+│   │   │   ├── whisper_stt.py
+│   │   │   └── vad.py
 │   │   └── loaders/
 │   │       ├── document_loader.py
 │   │       ├── text_cleaner.py

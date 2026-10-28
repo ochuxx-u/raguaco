@@ -98,7 +98,7 @@ borran solos pasados `TTS_RETENTION_MINUTES` (30 por defecto).
 
 Modelo de transcripción de voz a texto (STT) que Raguaco usa para convertir la pregunta hablada del usuario en texto antes de consultar el RAG. Se ejecuta **en local**, sin API externa.
 
-**1. Instalar las dependencias** (ya incluidas en `requirements.txt`: `faster-whisper`, `sounddevice`, `soundfile`):
+**1. Instalar las dependencias** (ya incluidas en `requirements.txt`: `faster-whisper`, `soundcard`, `soundfile`):
 ```
 pip install -r requirements.txt
 ```
@@ -119,6 +119,50 @@ STT_LANGUAGE=es
 STT_DEVICE=cpu
 STT_COMPUTE_TYPE=int8
 ```
+
+##### Probar la secuencia completa de voz (STT → RAG → TTS)
+
+El flujo cierra la pregunta **automáticamente** cuando detecta
+`VOICE_SILENCE_SECONDS` segundos de silencio después de haber oído voz. El
+detector (`DetectorVoz`) acumula bloques del micrófono y entrega el audio
+completo; después la API transcribe con faster-whisper, consulta el RAG y
+devuelve la respuesta con fuentes y audio por fragmentos.
+
+1. Arranca la API (precarga STT y TTS en segundo plano):
+```
+cd App
+uvicorn main:app --reload
+```
+
+2. En otra terminal, habla cuando el script lo indique:
+```
+cd App
+python tests_models/probar_voz_completa.py
+```
+Opciones útiles: `--sin-audio` (no reproduce), `--archivo pregunta.wav`
+(prueba un archivo), `--silencio 1.2` (ajusta el cierre), `--umbral` y
+`--calibracion` (ajustan el detector al ruido del micrófono),
+`--conversacion-id` (continúa una conversación) y `--usuario-id` (por defecto
+usa el usuario de prueba con documentos reales). El script pide unos segundos
+de silencio al empezar para medir el ruido de fondo.
+
+La ruta equivalente es `POST /v1/voice/consultar` (multipart):
+```
+curl -N -X POST http://localhost:8000/v1/voice/consultar \
+  -F "audio=@pregunta.wav;type=audio/wav" \
+  -F "usuario_id=d18f3e28-0c98-4b29-96d6-89a04c7d716b"
+```
+Responde NDJSON con `procesando`, `transcripcion`, `respuesta` (texto y
+`referencias`) y los eventos de audio (`inicio`, `fragmento`, `fin`). Acepta
+WAV, OGG/Opus y WebM (lo que graba `MediaRecorder` en el navegador); si el
+contenedor no lo lee `soundfile`, se decodifica con `ffmpeg`. Este endpoint es
+**solo para voz**; para preguntas escritas se usa `POST /v1/queries/`.
+
+> [!NOTE]
+> El detector de silencio del script es la referencia para el frontend: con
+> `MediaRecorder` + Web Audio se detecta la pausa y se sube el audio al mismo
+> endpoint. El streaming continuo por WebSocket/WebRTC queda como evolución
+> posterior de RF12.
 
 #### Descargar modelo de embeddings (multilingual-e5-small)
 

@@ -142,6 +142,14 @@ def _partir_por_limite(texto: str, limite: int) -> list[str]:
         if len(candidato) <= limite:
             actual = candidato
             continue
+
+        # Una cláusula corta ("Además,") no debe quedar sola: se une al
+        # principio de la siguiente y se reparte por palabras.
+        if actual and len(actual) < MIN_FRAGMENTO:
+            piezas.extend(_partir_por_palabras(candidato, limite))
+            actual = ''
+            continue
+
         if actual:
             piezas.append(actual)
         if len(clausula) <= limite:
@@ -151,6 +159,14 @@ def _partir_por_limite(texto: str, limite: int) -> list[str]:
             actual = ''
     if actual:
         piezas.append(actual)
+
+    if (
+        len(piezas) > 1
+        and len(piezas[-1]) < MIN_FRAGMENTO
+        and len(piezas[-2]) + 1 + len(piezas[-1]) <= limite
+    ):
+        piezas[-2] = f'{piezas[-2]} {piezas[-1]}'
+        piezas.pop()
     return piezas
 
 

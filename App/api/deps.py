@@ -29,6 +29,7 @@ from infrastructure.loaders.document_loader import DocumentLoader
 from infrastructure.loaders.text_cleaner import TextCleaner
 from infrastructure.retrieval.retriever import Retriever
 from infrastructure.storage.local_storage import StorageService
+from infrastructure.stt.whisper_stt import WhisperSTT
 from infrastructure.tts.kokoro_tts import KokoroTTS
 from infrastructure.vector.pgvector_repository import VectorRepository
 
@@ -93,8 +94,21 @@ def get_tts_engine() -> KokoroTTS:
 
 
 @lru_cache(maxsize=1)
+def get_stt_service() -> WhisperSTT:
+    """Modelo STT único por proceso: faster-whisper tarda segundos en cargar."""
+    return WhisperSTT()
+
+
+STTServiceDep = Annotated[WhisperSTT, Depends(get_stt_service)]
+
+
+@lru_cache(maxsize=1)
 def get_voice_service() -> VoiceService:
-    """Servicio de voz único: comparte el motor TTS y el directorio de WAV."""
+    """Servicio de voz único para el TTS: comparte motor y directorio de WAV.
+
+    No depende de la base de datos: `POST /v1/voice/tts` debe funcionar aunque
+    el RAG no esté disponible.
+    """
     return VoiceService(tts=get_tts_engine())
 
 
@@ -216,3 +230,24 @@ def get_rag_service(
 
 
 RAGServiceDep = Annotated[RAGService, Depends(get_rag_service)]
+
+
+def get_voice_flow_service(
+    stt: STTServiceDep,
+    rag: RAGServiceDep,
+    conversation_service: ConversationServiceDep,
+) -> VoiceService:
+    """Ensambla la secuencia completa voz → STT → RAG → TTS (RF12).
+
+    Comparte el motor TTS con `get_voice_service` para no cargar Kokoro dos
+    veces; el STT sí es propio del flujo de voz.
+    """
+    return VoiceService(
+        tts=get_tts_engine(),
+        stt=stt,
+        rag=rag,
+        conversations=conversation_service,
+    )
+
+
+VoiceFlowServiceDep = Annotated[VoiceService, Depends(get_voice_flow_service)]

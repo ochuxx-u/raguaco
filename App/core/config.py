@@ -168,6 +168,104 @@ class Settings(BaseSettings):
         ),
     )
 
+    stt_model: str = Field(
+        default='ai-models/faster-whisper-small',
+        description=(
+            'Directorio del modelo faster-whisper descargado con hf download. '
+            'Ruta relativa a App/; los pesos NO viajan en git (ver README).'
+        ),
+    )
+
+    stt_language: str = Field(
+        default='es',
+        description=(
+            'Idioma forzado para la transcripción (p. ej. es). Vacío o "auto" '
+            'deja que Whisper lo detecte.'
+        ),
+    )
+
+    stt_device: str = Field(
+        default='cpu',
+        description='Dispositivo de faster-whisper: cpu o cuda.',
+    )
+
+    stt_compute_type: str = Field(
+        default='int8',
+        description=(
+            'Precisión de cómputo de faster-whisper. int8 es la más rápida en '
+            'CPU; float16 solo tiene sentido con cuda.'
+        ),
+    )
+
+    stt_beam_size: int = Field(
+        default=1,
+        ge=1,
+        description='Ancho de búsqueda de Whisper: 1 (greedy) es el más rápido.',
+    )
+
+    stt_threads: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            'Hilos de CPU para Whisper. 0 deja que faster-whisper use el '
+            'valor por defecto (todos los núcleos disponibles).'
+        ),
+    )
+
+    stt_warmup: bool = Field(
+        default=True,
+        description=(
+            'Carga el modelo STT en segundo plano al arrancar la API para que '
+            'la primera consulta de voz no pague la carga del modelo.'
+        ),
+    )
+
+    voice_silence_seconds: float = Field(
+        default=1.5,
+        gt=0,
+        description=(
+            'Segundos de silencio, después de haber detectado voz, que cierran '
+            'la pregunta y disparan el procesamiento automático.'
+        ),
+    )
+
+    voice_chunk_seconds: float = Field(
+        default=0.5,
+        gt=0,
+        description=(
+            'Tamaño del bloque de micrófono que analiza el detector de voz. '
+            'Bloques pequeños reaccionan antes al silencio.'
+        ),
+    )
+
+    voice_min_utterance_seconds: float = Field(
+        default=0.35,
+        gt=0,
+        description=(
+            'Duración mínima de voz para procesar una pregunta; descarta '
+            'ruidos y toses.'
+        ),
+    )
+
+    voice_max_utterance_seconds: float = Field(
+        default=20.0,
+        gt=0,
+        description=(
+            'Tope de audio que se acumula antes de procesar aunque no haya '
+            'silencio (preguntas muy largas).'
+        ),
+    )
+
+    voice_silence_peak: float = Field(
+        default=0.12,
+        gt=0,
+        description=(
+            'Nivel de pico (amplitud máxima) por debajo del cual un bloque se '
+            'considera silencio. El script de prueba lo eleva según el ruido '
+            'ambiente; súbelo si el ruido impide cerrar la pregunta.'
+        ),
+    )
+
     @model_validator(mode='before')
     @classmethod
     def _descartar_envios_vacios(cls, datos: object) -> object:

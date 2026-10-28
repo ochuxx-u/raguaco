@@ -1,19 +1,31 @@
-"""Servicio de voz: síntesis de texto a voz en fragmentos progresivos (RF12).
+"""Servicio de voz: secuencia completa voz → STT → RAG → TTS (RF12).
 
-Es la mitad TTS del flujo `VoiceService` del diagrama de secuencia
-(`Docs/UML/imagenes/DIA-SECUENCIA_Voice-Interact.png`): recibe una respuesta
-textual y la convierte en audio *mientras se reproduce*, no después de
-generarla completa.
+Implementa el `VoiceService` del diagrama de secuencia
+(`Docs/UML/imagenes/DIA-SECUENCIA_Voice-Interact.png`):
 
-La optimización tiene dos piezas:
+1. `procesar_audio(audio)` transcribe la pregunta con `WhisperSTT` (STT).
+2. `procesar_texto(transcripcion)` abre o valida la conversación y llama a
+   `RAGService.responder` para obtener la respuesta textual con sus fuentes
+   (RF5, RF8, RF9).
+3. `preparar(respuesta)` + `sintetizar(plan)` convierten esa respuesta en WAV
+   progresivos, para que el cliente empiece a escucharla antes de que termine
+   toda la síntesis.
+
+La detección de fin de voz (silencio) vive en
+`infrastructure.stt.vad.DetectorVoz`, porque depende de cómo se captura el
+audio (micrófono del navegador o del script de prueba); la API recibe el audio
+ya cerrado y procesa la consulta en cuanto llega.
+
+La optimización del TTS tiene dos piezas:
 
 1. `tts_text.segmentar_para_voz` corta el texto en frases: el primer fragmento
    es corto (latencia percibida baja) y los siguientes se mantienen acotados
    para que cada WAV esté listo antes de que termine de sonar el anterior.
 2. `VoiceService.sintetizar` es un generador asíncrono: escribe cada WAV en
    `{TTS_OUTPUT_DIR}/{job_id}/{indice}.wav` y lo entrega en cuanto está listo.
-   La ruta `POST /v1/voice/tts` lo serializa como NDJSON; el cliente puede
-   pedir y reproducir el fragmento 0 mientras el servidor sintetiza el 1.
+   Las rutas `POST /v1/voice/tts` y `POST /v1/voice/consultar` lo serializan
+   como NDJSON; el cliente puede pedir y reproducir el fragmento 0 mientras el
+   servidor sintetiza el 1.
 
 Los WAV se borran al preparar una síntesis nueva pasado
 `TTS_RETENTION_MINUTES`; así el disco no crece sin límite.
@@ -26,18 +38,40 @@ import time
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 
 from core.config import settings
 from domain.models.base import ModeloBase
+from domain.models.mensaje import MAX_LONGITUD_CONSULTA, Mensaje
+from domain.models.referencia_fuente import ReferenciaFuente
 from infrastructure.tts.kokoro_tts import KokoroTTS, TTSError
 from infrastructure.tts.tts_text import limpiar_para_voz, segmentar_para_voz
+
+if TYPE_CHECKING:
+    from domain.services.conversation_service import ConversationService
+    from domain.services.rag_service import RAGService
+    from infrastructure.stt.whisper_stt import WhisperSTT
 
 # Identificadores que llegan por URL: solo se aceptan los que genera el
 # servicio, para que un `../` no pueda salir del directorio de audio.
 _JOB_ID = re.compile(r'^[0-9a-f]{32}$')
 _NOMBRE_WAV = re.compile(r'^\d{3,4}\.wav$')
+
+# Longitud máxima del título de una conversación creada desde voz.
+MAX_TITULO = 30
+
+
+def _titulo_desde_texto(texto: str) -> str:
+    """Título corto de la conversación a partir de la transcripción."""
+    limpio = ' '.join(texto.split())
+    if len(limpio) <= MAX_TITULO:
+        return limpio
+    corte = limpio[:MAX_TITULO]
+    ultimo_espacio = corte.rfind(' ')
+    return corte[:ultimo_espacio] if ultimo_espacio > 0 else corte
 
 
 class PlanVoz(ModeloBase):
@@ -64,19 +98,55 @@ class FragmentoVoz(ModeloBase):
     ms_desde_inicio: int
 
 
+class RespuestaVoz(ModeloBase):
+    """Resultado de la secuencia voz → texto → RAG → respuesta textual.
+
+    El audio se genera después con `preparar` + `sintetizar`; este modelo
+    conserva la transcripción y la respuesta con sus fuentes (RF8, RNF7).
+    """
+
+    transcripcion: str
+    respuesta: str
+    conversacion_id: UUID
+    mensaje: Mensaje
+    referencias: list[ReferenciaFuente]
+
+
+class VozError(RuntimeError):
+    """El flujo de voz no pudo completarse."""
+
+
+class SinTranscripcion(VozError):
+    """El audio no produjo texto utilizable."""
+
+
+class ConversacionNoEncontrada(VozError):
+    """El `conversacion_id` recibido no existe."""
+
+
+class ConversacionAjena(VozError):
+    """La conversación pertenece a otro usuario."""
+
+
 class VoiceService:
-    """Orquesta limpieza, segmentación, síntesis y entrega incremental de audio."""
+    """Orquesta STT, RAG, segmentación y síntesis con entrega incremental."""
 
     def __init__(
         self,
         tts: KokoroTTS,
         *,
+        stt: 'WhisperSTT | None' = None,
+        rag: 'RAGService | None' = None,
+        conversations: 'ConversationService | None' = None,
         directorio: str | Path | None = None,
         retencion_minutos: int | None = None,
         primer_max: int | None = None,
         resto_max: int | None = None,
     ) -> None:
         self._tts = tts
+        self._stt = stt
+        self._rag = rag
+        self._conversations = conversations
         self._app_dir = Path(__file__).resolve().parents[2]
         crudo = str(directorio if directorio is not None else settings.tts_output_dir).strip()
         self._dir = self._resolver(crudo)
@@ -108,9 +178,131 @@ class VoiceService:
         return self._tts.configured
 
     @property
+    def disponible_stt(self) -> bool:
+        """True si el modelo STT está descargado y el flujo puede transcribir."""
+        return self._stt is not None and self._stt.configured
+
+    @property
+    def puede_consultar(self) -> bool:
+        """True si STT, RAG y conversaciones están ensamblados."""
+        return (
+            self._stt is not None
+            and self._rag is not None
+            and self._conversations is not None
+        )
+
+    @property
     def directorio(self) -> Path:
         """Directorio raíz de los WAV generados."""
         return self._dir
+
+    async def transcribir_audio(self, audio: bytes | np.ndarray) -> str:
+        """Convierte el audio de la pregunta en texto (STT).
+
+        Acepta bytes en cualquier formato que decodifique `WhisperSTT` o un
+        array mono float32 a 16 kHz.
+        """
+        if self._stt is None:
+            raise VozError(
+                'El flujo de voz no tiene STT configurado (falta WhisperSTT en '
+                'VoiceService).'
+            )
+        if isinstance(audio, (bytes, bytearray, memoryview)):
+            return await self._stt.transcribir_bytes(bytes(audio))
+        return await self._stt.transcribir(audio)
+
+    async def procesar_audio(
+        self,
+        audio: bytes | np.ndarray,
+        usuario_id: UUID,
+        conversacion_id: UUID | None = None,
+    ) -> RespuestaVoz:
+        """Secuencia completa para una pregunta hablada: STT → RAG.
+
+        El TTS se genera después con `preparar` + `sintetizar` para poder
+        entregar el audio por fragmentos (RF12).
+        """
+        transcripcion = await self.transcribir_audio(audio)
+        return await self.procesar_texto(
+            transcripcion,
+            usuario_id,
+            conversacion_id=conversacion_id,
+        )
+
+    async def procesar_texto(
+        self,
+        texto: str,
+        usuario_id: UUID,
+        conversacion_id: UUID | None = None,
+    ) -> RespuestaVoz:
+        """Responde una consulta de voz ya transcrita (o escrita).
+
+        Si no llega `conversacion_id`, abre una conversación nueva con las
+        primeras palabras de la consulta como título. Si llega, comprueba que
+        exista y sea del usuario antes de invocar al RAG (RF6).
+        """
+        if self._rag is None or self._conversations is None:
+            raise VozError(
+                'El flujo de voz no tiene RAG o ConversationService '
+                'configurados.'
+            )
+
+        consulta = ' '.join((texto or '').split())
+        if not consulta:
+            raise SinTranscripcion(
+                'No se entendió ninguna palabra en la pregunta.'
+            )
+        if len(consulta) > MAX_LONGITUD_CONSULTA:
+            raise VozError(
+                f'La pregunta transcrita tiene {len(consulta)} caracteres y el '
+                f'máximo es {MAX_LONGITUD_CONSULTA}. Intenta ser más breve.'
+            )
+
+        await self.validar_conversacion(usuario_id, conversacion_id)
+        if conversacion_id is None:
+            conversacion = await self._conversations.crear_conversacion(
+                usuario_id,
+                titulo=_titulo_desde_texto(consulta),
+            )
+            conversacion_id = conversacion.id
+
+        respuesta = await self._rag.responder(
+            consulta,
+            conversacion_id,
+            usuario_id=usuario_id,
+        )
+        return RespuestaVoz(
+            transcripcion=consulta,
+            respuesta=respuesta.mensaje.contenido,
+            conversacion_id=conversacion_id,
+            mensaje=respuesta.mensaje,
+            referencias=respuesta.referencias,
+        )
+
+    async def validar_conversacion(
+        self,
+        usuario_id: UUID,
+        conversacion_id: UUID | None,
+    ) -> None:
+        """Comprueba que la conversación exista y sea del usuario.
+
+        Se puede llamar antes de abrir el stream para responder 404/403 sin
+        haber empezado a generar audio.
+        """
+        if conversacion_id is None:
+            return
+        if self._conversations is None:
+            raise VozError('El flujo de voz no tiene ConversationService.')
+        conversacion = await self._conversations.obtener(conversacion_id)
+        if conversacion is None:
+            raise ConversacionNoEncontrada(
+                f'No existe una conversación con el id {conversacion_id}'
+            )
+        if conversacion.usuario_id != usuario_id:
+            raise ConversacionAjena(
+                f'La conversación {conversacion_id} no pertenece '
+                f'al usuario {usuario_id}'
+            )
 
     def preparar(self, texto: str) -> PlanVoz:
         """Limpia y segmenta `texto`; crea el directorio del job.

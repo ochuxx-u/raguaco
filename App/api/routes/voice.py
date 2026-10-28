@@ -1,35 +1,49 @@
 """Rutas del servicio de voz (RF12).
 
-Esta primera entrega implementa el Text-to-Speech del diagrama de secuencia
-(`Docs/UML/imagenes/DIA-SECUENCIA_Voice-Interact.png`). El flujo completo
-(STT → RAG → TTS) se montará encima de `POST /v1/voice/tts`, que ya devuelve
-audio incremental.
+Implementa la secuencia completa del diagrama
+(`Docs/UML/imagenes/DIA-SECUENCIA_Voice-Interact.png`):
 
-`POST /v1/voice/tts` responde **NDJSON** (`application/x-ndjson`), una línea
-JSON por evento:
+- `POST /v1/voice/consultar`: audio → STT → RAG → TTS. Responde NDJSON con
+  `procesando`, `transcripcion`, `respuesta` (texto + fuentes) y los eventos
+  de audio (`inicio`, `fragmento`, `fin`). El cliente cierra la grabación al
+  detectar silencio (o usa `DetectorVoz`); la API procesa el audio completo.
+- `POST /v1/voice/tts`: solo texto → audio, para el chat o pruebas.
+- `GET /v1/voice/tts/{job_id}/{nombre}`: sirve cada WAV generado.
 
-- `inicio`: `job_id`, `total_fragmentos`, texto limpio y fragmentos.
-- `fragmento`: `indice`, `texto`, `url` del WAV, `duracion` y tiempos.
-- `fin`: duración total y latencias agregadas.
-
-El cliente puede reproducir el WAV del evento `fragmento` en cuanto llega,
-mientras el servidor sigue sintetizando los siguientes. Los archivos se
-sirven en `GET /v1/voice/tts/{job_id}/{nombre}.wav`.
-
-La síntesis se apoya en `VoiceService` (dominio) y `KokoroTTS`
-(infraestructura); aquí solo se valida la petición y se serializa el stream.
+El TTS se entrega por fragmentos para que el cliente pueda reproducir el
+primero mientras el servidor sintetiza el siguiente (optimización de latencia).
 """
 
 import json
 import time
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Body, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    Body,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, StreamingResponse
+from psycopg.errors import ForeignKeyViolation
 from pydantic import Field
 
-from api.deps import VoiceServiceDep
+from api.deps import VoiceFlowServiceDep, VoiceServiceDep
 from domain.models.base import ModeloBase
+from domain.services.voice_service import (
+    ConversacionAjena,
+    ConversacionNoEncontrada,
+    SinTranscripcion,
+    VozError,
+)
+from infrastructure.embeddings.embedding_service import EmbeddingError
+from infrastructure.llm.llm_service import LLMError
+from infrastructure.stt.whisper_stt import STTError
 from infrastructure.tts.kokoro_tts import TTSError
 
 router = APIRouter(prefix='/v1/voice', tags=['voice'])
@@ -37,6 +51,9 @@ router = APIRouter(prefix='/v1/voice', tags=['voice'])
 # Tope de entrada: una respuesta RAG se recorta a 1000 caracteres, pero el
 # endpoint también se usa para probar textos más largos.
 MAX_TEXTO_TTS = 5000
+
+# Tope del audio subido (un minuto de WAV 16 kHz mono ronda 2 MB).
+MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
 
 class TextoVozPeticion(ModeloBase):
@@ -196,6 +213,217 @@ async def text_to_speech(
         headers={
             'Cache-Control': 'no-store',
             # Evita que un proxy (nginx) acumule el stream completo.
+            'X-Accel-Buffering': 'no',
+        },
+    )
+
+
+@router.post(
+    '/consultar',
+    response_class=StreamingResponse,
+    summary='Preguntar por voz (STT → RAG → TTS)',
+    description=(
+        'Recibe el audio de una pregunta, lo transcribe con faster-whisper, '
+        'consulta el RAG con el texto y devuelve la respuesta con sus fuentes '
+        'y el audio por fragmentos. El cliente puede cerrar la grabación al '
+        'detectar silencio (o usar `DetectorVoz`); la API procesa el audio '
+        'completo y responde NDJSON con los eventos: `procesando`, '
+        '`transcripcion`, `respuesta`, `inicio`, `fragmento`, `fin`. Si no hay '
+        'evidencia documental, la respuesta es el rechazo explícito de RF9 y '
+        '`referencias` viene vacío. Para preguntas escritas usa '
+        '`POST /v1/queries/`.'
+    ),
+    responses={
+        200: {
+            'description': 'Stream NDJSON con la transcripción, la respuesta y sus WAV',
+            'content': {'application/x-ndjson': {}},
+        },
+        403: {'description': 'La conversación pertenece a otro usuario'},
+        404: {'description': 'No existe la conversación indicada'},
+        413: {'description': 'El audio supera el tamaño máximo'},
+        422: {'description': 'Audio vacío o pregunta sin texto reconocible'},
+        503: {'description': 'STT, TTS o modelos locales no disponibles'},
+    },
+)
+async def consultar_voz(
+    request: Request,
+    voz: VoiceFlowServiceDep,
+    audio: Annotated[
+        UploadFile,
+        File(description='Audio de la pregunta (WAV, OGG, WebM, MP3…)'),
+    ],
+    usuario_id: Annotated[UUID, Form(description='Usuario que hace la pregunta')],
+    conversacion_id: Annotated[
+        UUID | None,
+        Form(description='Conversación existente; si se omite, se crea una nueva'),
+    ] = None,
+) -> StreamingResponse:
+    # RNF6: sin modelos no se abre un stream condenado a fallar.
+    if not voz.puede_consultar:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail='El flujo de voz no tiene STT/RAG configurados.',
+        )
+    if not voz.disponible_stt:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                'El STT no está disponible: falta el modelo faster-whisper en '
+                'App/ai-models/faster-whisper-small. Descárgalo según el README.'
+            ),
+        )
+    if not voz.disponible:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                'El TTS no está disponible: falta el modelo Kokoro o la voz en '
+                'App/ai-models/kokoro-82m.'
+            ),
+        )
+
+    try:
+        await voz.validar_conversacion(usuario_id, conversacion_id)
+    except ConversacionNoEncontrada as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ConversacionAjena as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        ) from exc
+
+    data = await audio.read()
+    await audio.close()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail='El archivo de audio está vacío.',
+        )
+    if len(data) > MAX_AUDIO_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=(
+                f'El audio supera el máximo de '
+                f'{MAX_AUDIO_BYTES // (1024 * 1024)} MB.'
+            ),
+        )
+
+    async def eventos():
+        """Transcribe, consulta el RAG y transmite el audio de la respuesta."""
+        inicio = time.perf_counter()
+        ms_stt: int | None = None
+        ms_rag: int | None = None
+        primera_ms: int | None = None
+        duracion_total = 0.0
+
+        def error(codigo: str, detalle: str) -> str:
+            return _linea({'tipo': 'error', 'codigo': codigo, 'detalle': detalle})
+
+        try:
+            yield _linea({'tipo': 'procesando'})
+
+            t0 = time.perf_counter()
+            transcripcion = await voz.transcribir_audio(data)
+            ms_stt = int(round((time.perf_counter() - t0) * 1000))
+            yield _linea(
+                {
+                    'tipo': 'transcripcion',
+                    'texto': transcripcion,
+                    'ms_stt': ms_stt,
+                }
+            )
+
+            t0 = time.perf_counter()
+            resultado = await voz.procesar_texto(
+                transcripcion,
+                usuario_id,
+                conversacion_id=conversacion_id,
+            )
+            ms_rag = int(round((time.perf_counter() - t0) * 1000))
+            yield _linea(
+                {
+                    'tipo': 'respuesta',
+                    'texto': resultado.respuesta,
+                    'conversacion_id': str(resultado.conversacion_id),
+                    'mensaje': resultado.mensaje.model_dump(mode='json'),
+                    'referencias': [
+                        referencia.model_dump(mode='json')
+                        for referencia in resultado.referencias
+                    ],
+                    'ms_rag': ms_rag,
+                }
+            )
+
+            plan = voz.preparar(resultado.respuesta)
+            yield _linea(
+                {
+                    'tipo': 'inicio',
+                    'job_id': plan.job_id,
+                    'total_fragmentos': len(plan.fragmentos),
+                    'texto': plan.texto,
+                    'fragmentos': plan.fragmentos,
+                }
+            )
+            async for fragmento in voz.sintetizar(plan):
+                if primera_ms is None:
+                    primera_ms = fragmento.ms_desde_inicio
+                duracion_total += fragmento.duracion
+                url = str(
+                    request.url_for(
+                        'tts_fragmento',
+                        job_id=plan.job_id,
+                        nombre=fragmento.nombre,
+                    )
+                )
+                yield _linea(
+                    {
+                        'tipo': 'fragmento',
+                        **fragmento.model_dump(),
+                        'url': url,
+                    }
+                )
+            ms_total = int(round((time.perf_counter() - inicio) * 1000))
+            yield _linea(
+                {
+                    'tipo': 'fin',
+                    'job_id': plan.job_id,
+                    'conversacion_id': str(resultado.conversacion_id),
+                    'total_fragmentos': len(plan.fragmentos),
+                    'duracion_total': round(duracion_total, 3),
+                    'ms_primera': primera_ms,
+                    'ms_stt': ms_stt,
+                    'ms_rag': ms_rag,
+                    'ms_total': ms_total,
+                }
+            )
+        except SinTranscripcion as exc:
+            yield error('sin_transcripcion', str(exc))
+        except STTError as exc:
+            yield error('stt', str(exc))
+        except (ConversacionNoEncontrada, ConversacionAjena, VozError) as exc:
+            yield error('voz', str(exc))
+        except EmbeddingError as exc:
+            yield error('rag_no_disponible', str(exc))
+        except LLMError as exc:
+            yield error('llm', str(exc))
+        except TTSError as exc:
+            yield error('tts', str(exc))
+        except ForeignKeyViolation:
+            yield error(
+                'usuario_no_existe',
+                f'No existe un usuario con el id {usuario_id}.',
+            )
+        except Exception as exc:  # noqa: BLE001 - el stream no puede cambiar de estado
+            print(f'[voz] error inesperado: {exc}', flush=True)
+            yield error('interno', f'Error inesperado en el flujo de voz: {exc}')
+
+    return StreamingResponse(
+        eventos(),
+        media_type='application/x-ndjson',
+        headers={
+            'Cache-Control': 'no-store',
             'X-Accel-Buffering': 'no',
         },
     )
