@@ -1,3 +1,4 @@
+import brandIcon from '../icon.svg'
 import './Sidebar.css'
 
 const navigationItems = [
@@ -87,7 +88,7 @@ function Sidebar({ activeView, collapsed, overlayOpen, onNavigate, onToggle }) {
           title="Ir a la página de inicio"
           onClick={() => onNavigate('landing')}
         >
-          <span className="sidebar__logo" aria-hidden="true" />
+          <img className="sidebar__logo" src={brandIcon} alt="" aria-hidden="true" />
           <span className="sidebar__brand-text">
             RAGUACO <span className="sidebar__brand-accent">AI</span>
           </span>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import brandIcon from '../icon.svg'
 import Sidebar from './Sidebar.jsx'
 import './AppLayout.css'
 
@@ -135,7 +136,7 @@ function AppLayout({
           </button>
 
           <span className="app-layout__mobile-brand">
-            <span className="app-layout__mobile-logo" aria-hidden="true" />
+            <img className="app-layout__mobile-logo" src={brandIcon} alt="" aria-hidden="true" />
             RAGUACO <span className="app-layout__mobile-accent">AI</span>
           </span>
         </header>

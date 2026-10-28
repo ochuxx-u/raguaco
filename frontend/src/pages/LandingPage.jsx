@@ -1,3 +1,4 @@
+import brandIcon from '../icon.svg'
 import './LandingPage.css'
 
 const navItems = [
@@ -44,7 +45,7 @@ function LandingPage({ onNavigate = () => {}, onStart = () => {} }) {
           aria-label="RAGUACO AI — Inicio"
           onClick={(event) => handleNavigation(event, 'landing')}
         >
-          <span className="landing__logo-mark" aria-hidden="true" />
+          <img className="landing__logo-mark" src={brandIcon} alt="" aria-hidden="true" />
           <span>
             RAGUACO <span className="landing__brand-accent">AI</span>
           </span>

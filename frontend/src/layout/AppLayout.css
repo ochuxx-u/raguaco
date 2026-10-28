@@ -90,11 +90,10 @@
   }
 
   .app-layout__mobile-logo {
+    display: block;
     width: 30px;
     height: 30px;
-    background-color: var(--color-primary);
-    border-radius: var(--radius-logo);
-    box-shadow: var(--shadow-logo);
+    object-fit: contain;
   }
 
   .app-layout__mobile-accent {

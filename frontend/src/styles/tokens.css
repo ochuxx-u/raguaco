@@ -38,12 +38,10 @@
   --radius-button: 12px;
   --radius-card: 16px;
   --radius-file-icon: 11px;
-  --radius-logo: 9px;
   --radius-pill: 99px;
 
   /* Glows y sombras */
   --shadow-primary: 0 0 28px rgba(59, 130, 246, 0.6);
-  --shadow-logo: 0 0 18px rgba(34, 211, 238, 0.5);
   --shadow-floating-card: 0 20px 40px rgba(0, 0, 0, 0.4);
   --shadow-voice-card: 0 0 30px rgba(59, 130, 246, 0.6);
 }

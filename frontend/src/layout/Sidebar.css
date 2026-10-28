@@ -44,12 +44,11 @@
 }
 
 .sidebar__logo {
+  display: block;
   flex: 0 0 auto;
   width: 30px;
   height: 30px;
-  background-color: var(--color-primary);
-  border-radius: var(--radius-logo);
-  box-shadow: var(--shadow-logo);
+  object-fit: contain;
 }
 
 .sidebar__brand-accent {
