@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import './ChatInput.css'
 
 const MAX_TEXTAREA_HEIGHT = 132
@@ -13,13 +13,19 @@ const COUNTER_REMAINING_THRESHOLD = 100
 
 function ChatInput({
   disabled = false,
+  hasSelectedDocuments = true,
   isSending = false,
   onGoToDocuments = () => {},
   onSend,
 }) {
   const [value, setValue] = useState('')
   const textareaRef = useRef(null)
-  const canSend = value.trim().length > 0 && !disabled && !isSending
+  const warningId = useId()
+  // Sin documento de referencia no hay contexto contra el que preguntar (RF8):
+  // el campo se bloquea y se muestra una guía junto al botón "+".
+  const isBlockedByDocuments = !hasSelectedDocuments
+  const canSend =
+    value.trim().length > 0 && !disabled && !isSending && !isBlockedByDocuments
   const remaining = MAX_MESSAGE_LENGTH - value.length
   const showCounter = remaining <= COUNTER_REMAINING_THRESHOLD
   const isAtLimit = remaining <= 0
@@ -52,7 +58,11 @@ function ChatInput({
   }
 
   return (
-    <div className="chat-input">
+    <div
+      className={`chat-input${
+        isBlockedByDocuments ? ' chat-input--blocked' : ''
+      }`}
+    >
       <button
         className="chat-input__icon-button"
         type="button"
@@ -73,14 +83,38 @@ function ChatInput({
         </svg>
       </button>
 
+      {isBlockedByDocuments && (
+        <div className="chat-input__warning" role="status" aria-live="polite">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z" />
+            <path d="M12 9v4M12 17h.01" />
+          </svg>
+          <span className="chat-input__warning-text" id={warningId}>
+            Selecciona al menos un documento de referencia
+          </span>
+        </div>
+      )}
+
       <textarea
         className="chat-input__field"
         ref={textareaRef}
         rows="1"
         value={value}
         maxLength={MAX_MESSAGE_LENGTH}
-        placeholder="Pregunta algo sobre tus documentos…"
+        placeholder={
+          isBlockedByDocuments ? '' : 'Pregunta algo sobre tus documentos…'
+        }
         aria-label="Escribe tu pregunta"
+        aria-describedby={isBlockedByDocuments ? warningId : undefined}
+        disabled={disabled || isBlockedByDocuments}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={handleKeyDown}
       />

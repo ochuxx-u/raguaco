@@ -40,6 +40,10 @@ function ChatPage({
   const messageSequence = useRef(0)
   const documentsRequestRef = useRef(0)
   const messagesRequestRef = useRef(0)
+  // Distingue la selección inicial (primer documento por defecto) de una
+  // selección vacía elegida por el usuario: si ya ha tocado el panel, no se
+  // vuelve a marcar nada automáticamente.
+  const hasUserChosenSelection = useRef(false)
 
   const loadDocuments = async () => {
     const requestId = ++documentsRequestRef.current
@@ -113,18 +117,22 @@ function ChatPage({
   useEffect(() => {
     if (isDocumentsLoading) return
 
-    if (documents.length === 0) {
-      setSelectedDocumentIds([])
-      return
-    }
-
     setSelectedDocumentIds((current) => {
       const validIds = current.filter((id) =>
         documents.some((document) => document.id === id),
       )
-      return validIds.length > 0 ? validIds : [documents[0].id]
+
+      if (validIds.length > 0) return validIds
+      if (documents.length === 0 || hasUserChosenSelection.current) return []
+
+      return [documents[0].id]
     })
   }, [documents, isDocumentsLoading])
+
+  useEffect(() => {
+    // Al cambiar de usuario la selección vuelve a su valor por defecto.
+    hasUserChosenSelection.current = false
+  }, [currentUser?.id])
 
   useEffect(() => {
     onSelectedDocumentsChange(selectedDocumentIds)
@@ -158,14 +166,14 @@ function ChatPage({
   const handleToggleDocument = (document) => {
     if (!document?.id) return
 
+    hasUserChosenSelection.current = true
+
     setSelectedDocumentIds((current) => {
       const isSelected = current.includes(document.id)
 
-      // El chat necesita al menos un documento seleccionado como filtro.
-      if (isSelected && current.length === 1) {
-        return current
-      }
-
+      // Se permite quedarse sin documentos: el chat bloquea la pregunta hasta
+      // que se seleccione al menos uno y, sin filtro, el backend busca en todos
+      // los documentos del usuario.
       return isSelected
         ? current.filter((id) => id !== document.id)
         : [...current, document.id]
@@ -209,7 +217,7 @@ function ChatPage({
   const handleSend = async (question) => {
     const trimmedQuestion = question.trim()
 
-    if (!trimmedQuestion || isThinking) return
+    if (!trimmedQuestion || isThinking || selectedDocumentIds.length === 0) return
 
     setMessages((currentMessages) => [
       ...currentMessages,
@@ -274,6 +282,7 @@ function ChatPage({
         <ChatWindow
           activeEvidence={activeEvidence}
           error={messagesError}
+          hasSelectedDocuments={selectedDocumentIds.length > 0}
           isDocumentsOpen={isDocumentsOpen}
           isEvidenceOpen={isEvidenceOpen}
           isLoading={isMessagesLoading}

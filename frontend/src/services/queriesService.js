@@ -15,7 +15,10 @@ const queriesService = {
 
   async ask(question, conversationId, options = {}) {
     // TODO(conexión API): POST /v1/queries/ con
-    // { usuario_id, contenido, conversacion_id, filtros: { documento_ids: options.documentIds } }
+    // { usuario_id, contenido, conversacion_id, filtros: { documento_ids } }.
+    // Sin documentos seleccionados no se envía `filtros` (ni `documento_ids`):
+    // el backend busca entonces en todos los documentos del usuario en lugar de
+    // filtrar por una lista vacía, que no devolvería evidencia.
     return { respuesta: null, fuentes: [] }
   },
 }

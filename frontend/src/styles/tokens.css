@@ -15,6 +15,10 @@
   --color-danger-bg: #2A1215;
   --color-danger-border: #5C2B2E;
   --color-status-error: #FB923C;
+  /* Avisos de guía (no son errores): ámbar que armoniza con el cian de acento */
+  --color-warning: #FBBF24;
+  --color-warning-bg: rgba(251, 191, 36, 0.1);
+  --color-warning-border: rgba(251, 191, 36, 0.32);
 
   /* Tipografía */
   --font-family: "Manrope", system-ui, sans-serif;

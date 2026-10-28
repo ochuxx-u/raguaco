@@ -1,7 +1,7 @@
 .chat-input {
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   min-width: 0;
   padding: 10px;
@@ -30,6 +30,46 @@
   border-color: var(--color-interactive);
 }
 
+/* Aviso de guía dentro de la fila del compositor, junto al botón "+".
+   Es una indicación, no un error: fondo y borde ámbar translúcidos. */
+.chat-input__warning {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  max-width: 340px;
+  min-width: 0;
+  padding: 7px 12px 7px 10px;
+  color: var(--color-warning);
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  animation: chat-input-warning-in 180ms ease-out;
+}
+
+.chat-input__warning svg {
+  flex: 0 0 auto;
+}
+
+.chat-input__warning-text {
+  min-width: 0;
+}
+
+@keyframes chat-input-warning-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .chat-input__field {
   flex: 1;
   min-width: 0;
@@ -47,9 +87,23 @@
   resize: none;
 }
 
+/* El aviso puede encogerse, pero el campo siempre conserva un ancho legible */
+.chat-input--blocked .chat-input__field {
+  min-width: 96px;
+}
+
+.chat-input__field:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 .chat-input__field::placeholder {
   color: var(--color-text-muted);
   opacity: 0.8;
+}
+
+.chat-input__field:disabled::placeholder {
+  opacity: 0.5;
 }
 
 .chat-input__icon-button,
@@ -118,6 +172,7 @@
 
 @media (max-width: 767px) {
   .chat-input {
+    flex-wrap: wrap;
     gap: 6px;
     padding: 8px;
   }
@@ -127,9 +182,30 @@
     padding: 9px 2px;
   }
 
+  /* En móvil el aviso ocupa su propia línea (debajo de los controles) para no
+     aplastar el campo de texto; en el DOM sigue justo después del botón "+". */
+  .chat-input__warning {
+    flex: 1 1 100%;
+    order: 1;
+    justify-content: center;
+    max-width: none;
+    padding: 6px 12px;
+    text-align: center;
+  }
+
+  .chat-input--blocked .chat-input__field {
+    min-width: 0;
+  }
+
   .chat-input__icon-button,
   .chat-input__send {
     width: 40px;
     height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-input__warning {
+    animation: none;
   }
 }

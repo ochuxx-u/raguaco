@@ -5,6 +5,7 @@ import './ChatWindow.css'
 function ChatWindow({
   activeEvidence,
   error,
+  hasSelectedDocuments = true,
   isDocumentsOpen,
   isEvidenceOpen,
   isLoading,
@@ -116,6 +117,7 @@ function ChatWindow({
 
         <ChatInput
           disabled={isLoading || Boolean(error)}
+          hasSelectedDocuments={hasSelectedDocuments}
           isSending={isThinking}
           onGoToDocuments={onGoToDocuments}
           onSend={onSend}
