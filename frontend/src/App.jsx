@@ -41,6 +41,11 @@ function App() {
   }
 
   const handleStart = () => {
+    if (currentUser) {
+      handleNavigate('dashboard')
+      return
+    }
+
     setPendingView('dashboard')
     setIsProfileSelectorOpen(true)
   }

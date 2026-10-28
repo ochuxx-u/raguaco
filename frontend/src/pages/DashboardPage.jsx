@@ -60,6 +60,8 @@ function DashboardPage({ currentUser = null, onNavigate = () => {} }) {
   const placeholder = isLoading ? '…' : hasError ? '—' : null
   const statValue = (key) => placeholder ?? summary?.stats[key] ?? '0'
 
+  const firstName = currentUser?.nombre?.trim().split(/\s+/)[0] ?? ''
+
   const stats = [
     {
       id: 'documents',
@@ -90,7 +92,7 @@ function DashboardPage({ currentUser = null, onNavigate = () => {} }) {
       <header className="dashboard__header">
         <div className="dashboard__heading">
           <h1 className="dashboard__title" id="dashboard-title">
-            Bienvenido de nuevo
+            Bienvenido de nuevo{firstName ? ` ${firstName}` : ''}
           </h1>
           <p className="dashboard__subtitle">
             Tu base de conocimiento está lista para responder.
