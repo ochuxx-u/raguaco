@@ -210,7 +210,8 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 - **Barra superior** (como el mockup): logo "RAGUACO AI", enlaces Dashboard · Documentos · Chat · Historial · Voz, indicador "Sistema activo".
 - **Hero:** etiqueta "PLATAFORMA DE CONOCIMIENTO CON IA"; título "RAGUACO AI" (con "AI" en cian); subtítulo "Conversa con tus documentos mediante inteligencia artificial"; párrafo "Carga tus archivos, vectorízalos automáticamente y haz preguntas en lenguaje natural, por texto o voz, con respuestas fundamentadas en fuentes."
 - **Botones:** "Comenzar ahora" (primario, con glow) y "Ver demo" (secundario con borde).
-- **Selección de perfil:** si no hay sesión activa, "Comenzar ahora" (y los enlaces de la barra superior) abren el modal **"Elegir perfil"** con los usuarios registrados en el backend (`GET /v1/models/users/`). Al elegir uno se guarda la sesión en `localStorage` (`raguaco.session`) y se entra a la vista solicitada (Dashboard por defecto). Al recargar, la sesión se restaura y se abre directamente el Dashboard. "Cerrar sesión" borra la sesión y vuelve a la Landing. Esta selección es local: **no autentica** al usuario.
+- **Selección de perfil:** "Comenzar ahora" (y los enlaces de la barra superior cuando no hay sesión) abren el modal **"Elegir perfil"** con los usuarios registrados en el backend (`GET /v1/models/users/`). Al elegir uno se guarda la sesión en `localStorage` (`raguaco.session`) y se entra a la vista solicitada (Dashboard por defecto). Al recargar, la sesión se restaura y se abre directamente el Dashboard. "Cerrar sesión" borra la sesión y vuelve a la Landing. Esta selección es local: **no autentica** al usuario.
+- **Registro de usuario:** el modal de perfiles incluye **"Registrar nuevo usuario"**, disponible haya o no perfiles. Abre un formulario en el mismo diálogo con `nombre` (2–50 caracteres) y `email` (formato válido y único). Al registrar correctamente (`POST /v1/models/users/`) se inicia sesión con el usuario creado; si el email ya existe se muestra el error sin cerrar el formulario.
 - **Tarjetas flotantes:** "Documento cargado" ("manual_politicas.pdf · 48 págs."), "Respuesta con fuentes" ("“Según la página 12…” · relevancia 94%"), "Modo voz" ("Habla con tu base de conocimiento").
   - Nota: el texto de la tarjeta "Respuesta con fuentes" se conserva como copy decorativo; ver regla de score en 8.4/8.7.
 - **Franja de pipeline** (se conserva; la modificación de eliminación aplica **solo al Dashboard**): `Upload → Process → Vectorize → Retrieve → Respond` como píldoras.
@@ -287,7 +288,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 | Archivo | Responsabilidad | Endpoints futuros (referencia) |
 | :--- | :--- | :--- |
 | `http.js` | Wrapper de `fetch`: base URL (`VITE_API_URL`), JSON, errores normalizados | — |
-| `usersService.js` | Perfiles registrados para la selección de perfil | `GET /v1/models/users/` |
+| `usersService.js` | Listar y registrar perfiles para la selección de perfil | `GET/POST /v1/models/users/` |
 | `documentsService.js` | Listar, consultar, subir, eliminar documentos; estado de procesamiento | `GET /documents`, `GET /documents/{id}`, `POST /documents`, `DELETE /documents/{id}` |
 | `queriesService.js` | Preguntas del chat (RAG) | `POST /query` con `{ pregunta, conversacionId? }` → `{ respuesta, fuentes }` |
 | `conversationsService.js` | Conversaciones e historial de mensajes | `GET/POST /conversations`, `GET /conversations/{id}/messages` |
