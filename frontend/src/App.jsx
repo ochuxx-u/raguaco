@@ -24,6 +24,7 @@ function App() {
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
   const [selectedDocumentIds, setSelectedDocumentIds] = useState([])
   const [selectedEvidence, setSelectedEvidence] = useState(null)
+  const [isChatBusy, setIsChatBusy] = useState(false)
   const [isProfileSelectorOpen, setIsProfileSelectorOpen] = useState(false)
   const [pendingView, setPendingView] = useState(null)
 
@@ -89,6 +90,7 @@ function App() {
     setSelectedDocumentId(null)
     setSelectedDocumentIds([])
     setSelectedEvidence(null)
+    setIsChatBusy(false)
   }
 
   const handleCloseProfileSelector = () => {
@@ -111,6 +113,7 @@ function App() {
     setSelectedDocumentId(null)
     setSelectedDocumentIds([])
     setSelectedEvidence(null)
+    setIsChatBusy(false)
     setActiveView('landing')
   }
 
@@ -121,6 +124,10 @@ function App() {
   const handleSelectedDocumentsChange = useCallback((documentIds) => {
     setSelectedDocumentIds(documentIds)
     setSelectedDocumentId(documentIds[0] ?? null)
+  }, [])
+
+  const handleChatBusyChange = useCallback((busy) => {
+    setIsChatBusy(Boolean(busy))
   }, [])
 
   const handleOpenConversation = (
@@ -153,11 +160,11 @@ function App() {
     }
   }
 
-  const handleNewConversation = () => {
+  const handleNewConversation = (view = 'chat') => {
     setSelectedConversationId(null)
     setSelectedConversationTitle('')
     setSelectedEvidence(null)
-    setActiveView('chat')
+    setActiveView(view)
   }
 
   const handleBackToChat = (conversationId = null) => {
@@ -195,13 +202,14 @@ function App() {
           <ChatPage
             conversationId={selectedConversationId}
             currentUser={currentUser}
+            onBusyChange={handleChatBusyChange}
             onConversationCreated={handleConversationCreated}
             onConversationTitleChange={handleConversationTitleChange}
             onNavigateToDocuments={() => handleNavigate('documents')}
             onNavigateToVoice={() => handleNavigate('voice')}
             onOpenEvidencePage={handleOpenEvidence}
             onSelectedDocumentsChange={handleSelectedDocumentsChange}
-            onStartNewConversation={handleNewConversation}
+            onStartNewConversation={() => handleNewConversation('chat')}
             selectedDocumentIds={selectedDocumentIds}
           />
         )
@@ -213,7 +221,15 @@ function App() {
           />
         )
       case 'voice':
-        return <VoicePage onOpenEvidencePage={handleOpenEvidence} />
+        return (
+          <VoicePage
+            currentUser={currentUser}
+            onOpenEvidencePage={handleOpenEvidence}
+            onSelectedDocumentsChange={handleSelectedDocumentsChange}
+            onStartNewConversation={() => handleNewConversation('voice')}
+            selectedDocumentIds={selectedDocumentIds}
+          />
+        )
       case 'evidence':
         return (
           <EvidencePage
@@ -240,6 +256,7 @@ function App() {
             selectedConversationId ? selectedConversationTitle : ''
           }
           isSidebarCollapsed={isSidebarCollapsed}
+          navigationDisabled={isChatBusy}
           onNavigate={handleNavigate}
           onToggleSidebar={handleToggleSidebar}
         >

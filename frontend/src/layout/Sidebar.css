@@ -92,6 +92,16 @@
   background-color: rgba(30, 41, 59, 0.65);
 }
 
+.sidebar__nav-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.sidebar__nav-item:disabled:hover {
+  color: var(--color-text-muted);
+  background-color: transparent;
+}
+
 .sidebar__nav-item--active {
   color: var(--color-text);
   background-color: var(--color-surface);

@@ -78,3 +78,13 @@
 .evidence-card__toggle:hover {
   color: var(--color-accent);
 }
+
+.evidence-card__toggle:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.evidence-card__toggle:disabled:hover {
+  color: var(--color-text-muted);
+}

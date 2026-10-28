@@ -24,6 +24,7 @@ function AppLayout({
   children,
   conversationTitle = '',
   isSidebarCollapsed,
+  navigationDisabled = false,
   onNavigate,
   onToggleSidebar,
 }) {
@@ -99,6 +100,7 @@ function AppLayout({
         activeView={activeView}
         collapsed={isSidebarCollapsedForViewport}
         conversationTitle={conversationTitle}
+        navigationDisabled={navigationDisabled}
         overlayOpen={isOverlayOpen}
         onNavigate={handleNavigateFromSidebar}
         onToggle={handleToggleSidebar}

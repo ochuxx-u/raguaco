@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import './EvidenceCard.css'
 
-function EvidenceCard({ source, isActive, onSelect, onViewMore }) {
+function EvidenceCard({
+  source,
+  isActive,
+  isViewMoreDisabled = false,
+  onSelect,
+  onViewMore,
+}) {
   const [isExpanded, setIsExpanded] = useState(false)
   const hasExternalAction = typeof onViewMore === 'function'
   const hasSelectionAction = typeof onSelect === 'function'
@@ -55,6 +61,7 @@ function EvidenceCard({ source, isActive, onSelect, onViewMore }) {
         className="evidence-card__toggle"
         type="button"
         aria-expanded={hasExternalAction ? undefined : isExpanded}
+        disabled={isViewMoreDisabled}
         onClick={handleToggle}
       >
         {hasExternalAction ? 'Ver más' : isExpanded ? 'Ver menos' : 'Ver más'}

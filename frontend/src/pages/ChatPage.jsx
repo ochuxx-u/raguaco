@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import ChatDocumentsPanel from '../components/chat/ChatDocumentsPanel.jsx'
 import ChatWindow from '../components/chat/ChatWindow.jsx'
 import EvidencePanel from '../components/evidence/EvidencePanel.jsx'
+import useDocumentSelection from '../hooks/useDocumentSelection.js'
 import conversationsService from '../services/conversationsService.js'
-import documentsService from '../services/documentsService.js'
 import queriesService from '../services/queriesService.js'
 import { deriveConversationTitle } from '../utils/conversations.js'
 import './ChatPage.css'
@@ -16,6 +16,7 @@ const INITIAL_EVIDENCE = {
 function ChatPage({
   conversationId,
   currentUser = null,
+  onBusyChange = () => {},
   onConversationCreated = () => {},
   onConversationTitleChange = () => {},
   onNavigateToDocuments = () => {},
@@ -25,12 +26,18 @@ function ChatPage({
   onStartNewConversation = () => {},
   selectedDocumentIds: initialSelectedDocumentIds = [],
 }) {
-  const [documents, setDocuments] = useState([])
-  const [isDocumentsLoading, setIsDocumentsLoading] = useState(true)
-  const [documentsError, setDocumentsError] = useState('')
-  const [selectedDocumentIds, setSelectedDocumentIds] = useState(() =>
-    initialSelectedDocumentIds.filter(Boolean),
-  )
+  const {
+    documents,
+    documentsError,
+    isDocumentsLoading,
+    loadDocuments,
+    selectedDocumentIds,
+    toggleDocument,
+  } = useDocumentSelection({
+    currentUser,
+    initialSelectedDocumentIds,
+    onSelectedDocumentsChange,
+  })
 
   const [conversationTitle, setConversationTitle] = useState('')
   const [messages, setMessages] = useState([])
@@ -45,7 +52,6 @@ function ChatPage({
   const [isEvidenceOpen, setIsEvidenceOpen] = useState(false)
 
   const messageSequence = useRef(0)
-  const documentsRequestRef = useRef(0)
   const messagesRequestRef = useRef(0)
   const titleRequestRef = useRef(0)
   const sendRequestRef = useRef(0)
@@ -53,38 +59,6 @@ function ChatPage({
   // conversación se marca su id para no recargar los mensajes que el backend
   // acaba de guardar y que ya se muestran.
   const loadedConversationIdRef = useRef(undefined)
-  // Distingue la selección inicial (primer documento por defecto) de una
-  // selección vacía elegida por el usuario: si ya ha tocado el panel, no se
-  // vuelve a marcar nada automáticamente.
-  const hasUserChosenSelection = useRef(false)
-
-  const loadDocuments = async () => {
-    const requestId = ++documentsRequestRef.current
-    setIsDocumentsLoading(true)
-    setDocumentsError('')
-
-    if (!currentUser?.id) {
-      setDocuments([])
-      setIsDocumentsLoading(false)
-      return
-    }
-
-    try {
-      const nextDocuments = await documentsService.list(currentUser.id)
-
-      if (requestId !== documentsRequestRef.current) return
-
-      setDocuments(nextDocuments)
-    } catch {
-      if (requestId === documentsRequestRef.current) {
-        setDocumentsError('No se pudieron cargar los documentos.')
-      }
-    } finally {
-      if (requestId === documentsRequestRef.current) {
-        setIsDocumentsLoading(false)
-      }
-    }
-  }
 
   const loadConversationTitle = async (id) => {
     const requestId = ++titleRequestRef.current
@@ -147,16 +121,17 @@ function ChatPage({
   }
 
   useEffect(() => {
+    onBusyChange(isThinking)
+  }, [isThinking, onBusyChange])
+
+  useEffect(() => {
     return () => {
       // Una respuesta que llegue después de salir del chat no debe cambiar la
       // conversación activa ni poblar otra vista.
       sendRequestRef.current += 1
+      onBusyChange(false)
     }
-  }, [])
-
-  useEffect(() => {
-    void loadDocuments()
-  }, [currentUser?.id])
+  }, [onBusyChange])
 
   useEffect(() => {
     void loadConversationTitle(conversationId)
@@ -170,30 +145,6 @@ function ChatPage({
     loadedConversationIdRef.current = conversationId
     void loadConversationMessages()
   }, [conversationId])
-
-  useEffect(() => {
-    if (isDocumentsLoading) return
-
-    setSelectedDocumentIds((current) => {
-      const validIds = current.filter((id) =>
-        documents.some((document) => document.id === id),
-      )
-
-      if (validIds.length > 0) return validIds
-      if (documents.length === 0 || hasUserChosenSelection.current) return []
-
-      return [documents[0].id]
-    })
-  }, [documents, isDocumentsLoading])
-
-  useEffect(() => {
-    // Al cambiar de usuario la selección vuelve a su valor por defecto.
-    hasUserChosenSelection.current = false
-  }, [currentUser?.id])
-
-  useEffect(() => {
-    onSelectedDocumentsChange(selectedDocumentIds)
-  }, [selectedDocumentIds, onSelectedDocumentsChange])
 
   const selectedDocuments = documents.filter((document) =>
     selectedDocumentIds.includes(document.id),
@@ -219,23 +170,6 @@ function ChatPage({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isDocumentsOpen, isEvidenceOpen])
-
-  const handleToggleDocument = (document) => {
-    if (!document?.id) return
-
-    hasUserChosenSelection.current = true
-
-    setSelectedDocumentIds((current) => {
-      const isSelected = current.includes(document.id)
-
-      // Se permite quedarse sin documentos: el chat bloquea la pregunta hasta
-      // que se seleccione al menos uno y, sin filtro, el backend busca en todos
-      // los documentos del usuario.
-      return isSelected
-        ? current.filter((id) => id !== document.id)
-        : [...current, document.id]
-    })
-  }
 
   const handleSourceClick = (messageId, sourceId) => {
     setActiveEvidence({ messageId, sourceId })
@@ -368,7 +302,7 @@ function ChatPage({
           onClose={() => setIsDocumentsOpen(false)}
           onRetry={loadDocuments}
           onStartNewConversation={handleStartNewConversation}
-          onToggleDocument={handleToggleDocument}
+          onToggleDocument={toggleDocument}
           selectedDocumentIds={selectedDocumentIds}
         />
       </aside>
@@ -406,6 +340,7 @@ function ChatPage({
         <EvidencePanel
           activeSourceId={activeEvidence.sourceId}
           focusToken={evidenceFocusToken}
+          isViewMoreDisabled={isThinking}
           onClose={() => setIsEvidenceOpen(false)}
           onSelectSource={handleSelectEvidenceSource}
           onViewMore={handleOpenEvidenceFromChat}

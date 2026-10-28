@@ -69,6 +69,7 @@ function ChatInput({
         type="button"
         aria-label="Ir a Documentos para subir un archivo"
         title="Subir documento desde Documentos"
+        disabled={isSending}
         onClick={onGoToDocuments}
       >
         <svg
@@ -115,7 +116,7 @@ function ChatInput({
         }
         aria-label="Escribe tu pregunta"
         aria-describedby={isBlockedByDocuments ? warningId : undefined}
-        disabled={disabled || isBlockedByDocuments}
+        disabled={disabled || isBlockedByDocuments || isSending}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={handleKeyDown}
       />
@@ -125,6 +126,7 @@ function ChatInput({
         type="button"
         aria-label="Ir a Voz para hablar con RAGUACO"
         title="Ir a Voz para hablar con RAGUACO"
+        disabled={isSending}
         onClick={onGoToVoice}
       >
         <svg

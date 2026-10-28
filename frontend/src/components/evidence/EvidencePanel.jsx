@@ -5,6 +5,7 @@ import './EvidencePanel.css'
 function EvidencePanel({
   activeSourceId,
   focusToken = 0,
+  isViewMoreDisabled = false,
   onClose,
   onSelectSource,
   onViewMore,
@@ -74,6 +75,7 @@ function EvidencePanel({
                 <EvidenceCard
                   source={source}
                   isActive={isActive}
+                  isViewMoreDisabled={isViewMoreDisabled}
                   onSelect={onSelectSource}
                   onViewMore={onViewMore}
                 />

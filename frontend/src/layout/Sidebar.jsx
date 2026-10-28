@@ -73,6 +73,7 @@ function Sidebar({
   activeView,
   collapsed,
   conversationTitle = '',
+  navigationDisabled = false,
   overlayOpen,
   onNavigate,
   onToggle,
@@ -125,6 +126,7 @@ function Sidebar({
                   type="button"
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={displayLabel}
+                  disabled={navigationDisabled}
                   title={displayLabel}
                   onClick={() => onNavigate(id)}
                 >
