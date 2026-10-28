@@ -31,6 +31,9 @@
   --font-size-34: 34px;
   --font-size-72: 72px;
 
+  /* Layout */
+  --app-header-height: 80px;
+
   /* Radios */
   --radius-button: 12px;
   --radius-card: 16px;

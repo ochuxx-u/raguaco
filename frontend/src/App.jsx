@@ -19,6 +19,7 @@ function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [selectedConversationId, setSelectedConversationId] = useState(null)
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState([])
   const [selectedEvidenceId, setSelectedEvidenceId] = useState(null)
   const [isProfileSelectorOpen, setIsProfileSelectorOpen] = useState(false)
   const [pendingView, setPendingView] = useState(null)
@@ -33,6 +34,10 @@ function App() {
     setActiveView(view)
     setSelectedConversationId(conversationId)
     setSelectedDocumentId(documentId)
+
+    if (view === 'chat' && documentId) {
+      setSelectedDocumentIds([documentId])
+    }
   }
 
   const handleStart = () => {
@@ -48,6 +53,7 @@ function App() {
     setPendingView(null)
     setSelectedConversationId(null)
     setSelectedDocumentId(null)
+    setSelectedDocumentIds([])
     setSelectedEvidenceId(null)
   }
 
@@ -68,6 +74,7 @@ function App() {
     setPendingView(null)
     setSelectedConversationId(null)
     setSelectedDocumentId(null)
+    setSelectedDocumentIds([])
     setSelectedEvidenceId(null)
     setActiveView('landing')
   }
@@ -76,8 +83,9 @@ function App() {
     setIsSidebarCollapsed((isCollapsed) => !isCollapsed)
   }
 
-  const handleSelectedDocumentChange = useCallback((documentId) => {
-    setSelectedDocumentId(documentId)
+  const handleSelectedDocumentsChange = useCallback((documentIds) => {
+    setSelectedDocumentIds(documentIds)
+    setSelectedDocumentId(documentIds[0] ?? null)
   }, [])
 
   const handleOpenConversation = (conversationId, documentId = null) => {
@@ -120,9 +128,10 @@ function App() {
           <ChatPage
             conversationId={selectedConversationId}
             currentUser={currentUser}
+            onNavigateToDocuments={() => handleNavigate('documents')}
             onOpenEvidencePage={handleOpenEvidence}
-            onSelectedDocumentChange={handleSelectedDocumentChange}
-            selectedDocumentId={selectedDocumentId}
+            onSelectedDocumentsChange={handleSelectedDocumentsChange}
+            selectedDocumentIds={selectedDocumentIds}
           />
         )
       case 'history':

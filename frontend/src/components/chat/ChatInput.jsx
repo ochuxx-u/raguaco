@@ -13,19 +13,16 @@ const COUNTER_REMAINING_THRESHOLD = 100
 
 function ChatInput({
   disabled = false,
-  isAttaching = false,
   isSending = false,
-  onAttachFile,
+  onGoToDocuments = () => {},
   onSend,
 }) {
   const [value, setValue] = useState('')
   const textareaRef = useRef(null)
-  const fileInputRef = useRef(null)
   const canSend = value.trim().length > 0 && !disabled && !isSending
   const remaining = MAX_MESSAGE_LENGTH - value.length
   const showCounter = remaining <= COUNTER_REMAINING_THRESHOLD
   const isAtLimit = remaining <= 0
-  const attachLabel = isAttaching ? 'Adjuntando documento' : 'Adjuntar documento'
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -54,24 +51,14 @@ function ChatInput({
     }
   }
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-
-    if (file) {
-      void onAttachFile(file)
-    }
-  }
-
   return (
     <div className="chat-input">
       <button
         className="chat-input__icon-button"
         type="button"
-        aria-label={attachLabel}
-        title={attachLabel}
-        disabled={isAttaching}
-        onClick={() => fileInputRef.current?.click()}
+        aria-label="Ir a Documentos para subir un archivo"
+        title="Subir documento desde Documentos"
+        onClick={onGoToDocuments}
       >
         <svg
           viewBox="0 0 24 24"
@@ -85,14 +72,6 @@ function ChatInput({
           <path d="M12 5v14M5 12h14" />
         </svg>
       </button>
-
-      <input
-        className="chat-input__file"
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.docx,.txt"
-        onChange={handleFileChange}
-      />
 
       <textarea
         className="chat-input__field"

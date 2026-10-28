@@ -84,10 +84,6 @@
   opacity: 0.5;
 }
 
-.chat-input__file {
-  display: none;
-}
-
 .chat-input__voice {
   color: var(--color-accent);
   background-color: rgba(34, 211, 238, 0.08);

@@ -4,24 +4,33 @@ import './ChatWindow.css'
 
 function ChatWindow({
   activeEvidence,
-  attachment,
-  attachmentError,
   error,
-  isAttaching,
   isDocumentsOpen,
   isEvidenceOpen,
   isLoading,
   isThinking,
   messages,
-  onAttachFile,
+  onGoToDocuments,
   onOpenDocuments,
   onOpenEvidence,
   onRetry,
   onSend,
   onSourceClick,
-  selectedDocument,
+  selectedDocuments = [],
   sendError,
 }) {
+  const selectedCount = selectedDocuments.length
+  const contextLabel =
+    selectedCount === 0
+      ? 'Sin documento seleccionado'
+      : selectedCount === 1
+        ? `Documento: ${selectedDocuments[0].nombre}`
+        : `${selectedCount} documentos seleccionados`
+  const contextTitle =
+    selectedCount > 1
+      ? selectedDocuments.map((document) => document.nombre).join(', ')
+      : selectedDocuments[0]?.nombre
+
   return (
     <section className="chat-window" aria-labelledby="chat-title">
       <header className="chat-window__header">
@@ -29,10 +38,8 @@ function ChatWindow({
           <h1 className="chat-window__title" id="chat-title">
             Chat RAG
           </h1>
-          <p className="chat-window__context" title={selectedDocument?.nombre}>
-            {selectedDocument
-              ? `Documento: ${selectedDocument.nombre}`
-              : 'Sin documento seleccionado'}
+          <p className="chat-window__context" title={contextTitle}>
+            {contextLabel}
           </p>
         </div>
 
@@ -101,34 +108,6 @@ function ChatWindow({
       />
 
       <div className="chat-window__composer">
-        {attachment && (
-          <div className="chat-window__attachment" role="status" aria-live="polite">
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              aria-hidden="true"
-            >
-              <path d="m21 11.5-8.5 8.5a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.5 5.5l-9 9a2 2 0 0 1-2.8-2.8l8.5-8.5" />
-            </svg>
-            <span className="chat-window__attachment-name" title={attachment.name}>
-              {attachment.name}
-            </span>
-            <span className="chat-window__attachment-state">
-              {isAttaching ? 'Subiendo…' : 'Adjunto'}
-            </span>
-          </div>
-        )}
-
-        {attachmentError && (
-          <p className="chat-window__error" role="alert">
-            {attachmentError}
-          </p>
-        )}
-
         {sendError && (
           <p className="chat-window__error" role="alert">
             {sendError}
@@ -137,9 +116,8 @@ function ChatWindow({
 
         <ChatInput
           disabled={isLoading || Boolean(error)}
-          isAttaching={isAttaching}
           isSending={isThinking}
-          onAttachFile={onAttachFile}
+          onGoToDocuments={onGoToDocuments}
           onSend={onSend}
         />
       </div>

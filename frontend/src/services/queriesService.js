@@ -13,7 +13,9 @@ const queriesService = {
     return []
   },
 
-  async ask() {
+  async ask(question, conversationId, options = {}) {
+    // TODO(conexión API): POST /v1/queries/ con
+    // { usuario_id, contenido, conversacion_id, filtros: { documento_ids: options.documentIds } }
     return { respuesta: null, fuentes: [] }
   },
 }

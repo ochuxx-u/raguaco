@@ -1,22 +1,19 @@
 import './ChatDocumentsPanel.css'
 
 function ChatDocumentsPanel({
-  categories,
-  categoryFilter,
   documents,
   error,
   isLoading,
-  onCategoryChange,
   onClose,
   onRetry,
-  onSelectDocument,
-  selectedDocumentId,
+  onToggleDocument,
+  selectedDocumentIds = [],
 }) {
   return (
     <section className="chat-documents" aria-labelledby="chat-documents-title">
       <header className="chat-documents__header">
         <h2 className="chat-documents__title" id="chat-documents-title">
-          Documentos
+          Seleccionar documentos
         </h2>
 
         {onClose && (
@@ -64,7 +61,7 @@ function ChatDocumentsPanel({
             {documents.length > 0 ? (
               <ul className="chat-documents__list">
                 {documents.map((document) => {
-                  const isSelected = document.id === selectedDocumentId
+                  const isSelected = selectedDocumentIds.includes(document.id)
 
                   return (
                     <li key={document.id}>
@@ -74,7 +71,7 @@ function ChatDocumentsPanel({
                         }`}
                         type="button"
                         aria-pressed={isSelected}
-                        onClick={() => onSelectDocument(document)}
+                        onClick={() => onToggleDocument(document)}
                       >
                         <span className="chat-documents__name" title={document.nombre}>
                           {document.nombre}
@@ -89,43 +86,11 @@ function ChatDocumentsPanel({
               </ul>
             ) : (
               <p className="chat-documents__empty">
-                {categories.length === 0
-                  ? 'Aún no hay documentos cargados.'
-                  : 'No hay documentos en esta categoría.'}
+                Aún no hay documentos cargados.
               </p>
             )}
           </>
         )}
-      </div>
-
-      <div className="chat-documents__filters">
-        <p className="chat-documents__filters-label">Filtros</p>
-        <div className="chat-documents__chips">
-          <button
-            className={`chat-documents__chip${
-              categoryFilter === 'all' ? ' chat-documents__chip--active' : ''
-            }`}
-            type="button"
-            aria-pressed={categoryFilter === 'all'}
-            onClick={() => onCategoryChange('all')}
-          >
-            Todas
-          </button>
-
-          {categories.map((category) => (
-            <button
-              className={`chat-documents__chip${
-                categoryFilter === category ? ' chat-documents__chip--active' : ''
-              }`}
-              type="button"
-              key={category}
-              aria-pressed={categoryFilter === category}
-              onClick={() => onCategoryChange(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
       </div>
     </section>
   )

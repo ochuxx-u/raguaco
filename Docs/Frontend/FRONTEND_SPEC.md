@@ -157,7 +157,6 @@ Píldora (`border-radius: 99px`, borde 1px, fondo transparente, `font-size: 12px
   - Opciones, en este orden: **Dashboard, Documentos, Chat, Historial, Voz, Evidencia**.
   - Ítem activo: fondo `--color-surface`, texto `--color-text` y acento `--color-accent`.
   - Cabecera: logo "RAGUACO AI" (cuadrado azul + texto, "AI" en cian).
-  - Pie: indicador "Sistema activo" con punto cian (elemento del mockup reubicado aquí al desaparecer la barra superior).
   - **Colapsable:** expandido ~240px (icono + etiqueta), colapsado ~72px (solo iconos, con tooltip). Botón de alternar visible en el propio sidebar. El estado vive en `App.jsx` (sin persistencia por ahora).
 - **Usuario como botón flotante** (modificación explícita): botón circular fijo, esquina inferior derecha, visible en todas las pantallas (incluida Landing). Estilo según el círculo de usuario del mockup: fondo `--color-surface-deep`, borde `--color-interactive`. Muestra las iniciales del perfil activo y, al hacer clic, un menú con nombre/email reales y "Cerrar sesión". Sin perfil activo muestra "Invitado" / "Sin perfil seleccionado" y la acción "Elegir perfil". **El círculo de usuario de la barra superior del mockup no se duplica.**
 - **Sin scroll horizontal** en ninguna pantalla; el scroll vertical ocurre dentro del contenedor de contenido de cada pantalla.
@@ -239,10 +238,11 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 ### 8.4 Chat RAG (`ChatPage`)
 
 - **Tres columnas en escritorio:**
-  1. **Documentos** (izquierda): lista de documentos y filtros por categoría (mockup: "Políticas · Legal · Soporte").
-  2. **Conversación** (centro): hilo de mensajes; respuesta con chips de fuentes ("Fuente 1 · pág. 12", "Fuente 2 · pág. 13").
+  1. **Seleccionar documentos** (izquierda): lista de documentos, sin filtros por categoría. Se pueden seleccionar **varios** documentos (mínimo uno); los seleccionados se resaltan con borde de acento y fondo sutil. El título del panel es "Seleccionar documentos".
+  2. **Conversación** (centro): hilo de mensajes; respuesta con chips de fuentes ("Fuente 1 · pág. 12", "Fuente 2 · pág. 13"). La cabecera muestra el documento seleccionado o "N documentos seleccionados".
   3. **Fuentes y evidencia** (derecha): **panel separado** (modificación explícita) con tarjetas de evidencia: documento · página, cita textual y "Ver más".
-- **Controles orientados a iconos** (modificación explícita): adjuntar (＋), **voz** (micrófono) y **enviar** (flecha/avión de papel) como botones de icono con `aria-label` en español. Los controles de voz y envío tienen la **transición visual** indicada en las modificaciones: en su estado compacto priorizan el icono. El campo de texto usa el placeholder "Pregunta algo sobre tus documentos…".
+- **Cabeceras alineadas:** las cabeceras del sidebar, documentos, chat y evidencia comparten la altura `--app-header-height` (80px) para que los bordes queden a la misma altura.
+- **Controles orientados a iconos** (modificación explícita): **＋** lleva a la vista Documentos para subir un archivo (ya no abre un selector de archivos), **voz** (micrófono) y **enviar** (flecha/avión de papel) como botones de icono con `aria-label` en español. Los controles de voz y envío tienen la **transición visual** indicada en las modificaciones: en su estado compacto priorizan el icono. El campo de texto usa el placeholder "Pregunta algo sobre tus documentos…".
 - **Fuentes bajo la respuesta:** cada fuente es cliqueable y enfoca/abre la evidencia correspondiente en el panel.
 - **Sin evidencia (RF9):** cuando la respuesta no tenga respaldo documental, mostrar un aviso explícito en lugar de una respuesta inventada. Copy base: "No encontré información suficiente en tus documentos para responder esta pregunta."
 - **Score de similitud: NO mostrar** porcentajes ni valores de similitud/relevancia (ver 9.6). El mockup muestra "Relevancia 94%": esa presentación queda pendiente hasta que el backend lo defina.

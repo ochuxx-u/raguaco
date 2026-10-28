@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ChatDocumentsPanel from '../components/chat/ChatDocumentsPanel.jsx'
 import ChatWindow from '../components/chat/ChatWindow.jsx'
 import EvidencePanel from '../components/evidence/EvidencePanel.jsx'
@@ -14,23 +14,23 @@ const INITIAL_EVIDENCE = {
 function ChatPage({
   conversationId,
   currentUser = null,
+  onNavigateToDocuments = () => {},
   onOpenEvidencePage = () => {},
-  onSelectedDocumentChange = () => {},
-  selectedDocumentId = null,
+  onSelectedDocumentsChange = () => {},
+  selectedDocumentIds: initialSelectedDocumentIds = [],
 }) {
   const [documents, setDocuments] = useState([])
   const [isDocumentsLoading, setIsDocumentsLoading] = useState(true)
   const [documentsError, setDocumentsError] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState(() =>
+    initialSelectedDocumentIds.filter(Boolean),
+  )
 
   const [messages, setMessages] = useState([])
   const [isMessagesLoading, setIsMessagesLoading] = useState(true)
   const [messagesError, setMessagesError] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [sendError, setSendError] = useState('')
-  const [attachment, setAttachment] = useState(null)
-  const [attachmentError, setAttachmentError] = useState('')
-  const [isAttaching, setIsAttaching] = useState(false)
 
   const [activeEvidence, setActiveEvidence] = useState(INITIAL_EVIDENCE)
   const [evidenceFocusToken, setEvidenceFocusToken] = useState(0)
@@ -111,45 +111,28 @@ function ChatPage({
   }, [conversationId])
 
   useEffect(() => {
-    if (documents.length === 0) return
+    if (isDocumentsLoading) return
 
-    const hasSelectedDocument =
-      selectedDocumentId &&
-      documents.some((document) => document.id === selectedDocumentId)
-
-    if (!hasSelectedDocument) {
-      if (typeof onSelectedDocumentChange === 'function') {
-        onSelectedDocumentChange(documents[0].id)
-      }
-    }
-  }, [documents, selectedDocumentId, onSelectedDocumentChange])
-
-  const categories = useMemo(() => {
-    const result = []
-
-    for (const document of documents) {
-      if (document.categoria && !result.includes(document.categoria)) {
-        result.push(document.categoria)
-      }
+    if (documents.length === 0) {
+      setSelectedDocumentIds([])
+      return
     }
 
-    return result
-  }, [documents])
+    setSelectedDocumentIds((current) => {
+      const validIds = current.filter((id) =>
+        documents.some((document) => document.id === id),
+      )
+      return validIds.length > 0 ? validIds : [documents[0].id]
+    })
+  }, [documents, isDocumentsLoading])
 
   useEffect(() => {
-    if (categoryFilter !== 'all' && !categories.includes(categoryFilter)) {
-      setCategoryFilter('all')
-    }
-  }, [categories, categoryFilter])
+    onSelectedDocumentsChange(selectedDocumentIds)
+  }, [selectedDocumentIds, onSelectedDocumentsChange])
 
-  const filteredDocuments = useMemo(() => {
-    if (categoryFilter === 'all') return documents
-    return documents.filter((document) => document.categoria === categoryFilter)
-  }, [documents, categoryFilter])
-
-  const activeDocumentId = selectedDocumentId ?? null
-  const selectedDocument =
-    documents.find((document) => document.id === activeDocumentId) ?? null
+  const selectedDocuments = documents.filter((document) =>
+    selectedDocumentIds.includes(document.id),
+  )
 
   const activeEvidenceMessage = messages.find(
     (message) => message.id === activeEvidence.messageId,
@@ -172,14 +155,21 @@ function ChatPage({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isDocumentsOpen, isEvidenceOpen])
 
-  const handleSelectDocument = (document) => {
+  const handleToggleDocument = (document) => {
     if (!document?.id) return
 
-    if (typeof onSelectedDocumentChange === 'function') {
-      onSelectedDocumentChange(document.id)
-    }
+    setSelectedDocumentIds((current) => {
+      const isSelected = current.includes(document.id)
 
-    setIsDocumentsOpen(false)
+      // El chat necesita al menos un documento seleccionado como filtro.
+      if (isSelected && current.length === 1) {
+        return current
+      }
+
+      return isSelected
+        ? current.filter((id) => id !== document.id)
+        : [...current, document.id]
+    })
   }
 
   const handleSourceClick = (messageId, sourceId) => {
@@ -235,7 +225,8 @@ function ChatPage({
 
     try {
       const result = await queriesService.ask(trimmedQuestion, conversationId, {
-        documentId: activeDocumentId,
+        documentIds: selectedDocumentIds,
+        usuarioId: currentUser?.id,
       })
       const sources = Array.isArray(result.fuentes) ? result.fuentes : []
       const hasEvidence = sources.length > 0 && Boolean(result.respuesta)
@@ -259,38 +250,6 @@ function ChatPage({
     }
   }
 
-  const handleAttachFile = async (file) => {
-    if (!file || isAttaching) return
-
-    setAttachment({ name: file.name })
-    setAttachmentError('')
-    setIsAttaching(true)
-
-    try {
-      const uploadedDocument = await documentsService.upload(
-        file,
-        {},
-        currentUser?.id,
-      )
-
-      setAttachment({ name: uploadedDocument.nombre })
-      setDocuments((currentDocuments) => {
-        if (currentDocuments.some((document) => document.id === uploadedDocument.id)) {
-          return currentDocuments
-        }
-
-        return [uploadedDocument, ...currentDocuments]
-      })
-    } catch {
-      setAttachment(null)
-      setAttachmentError(
-        'No se pudo adjuntar el archivo. Solo se permiten PDF, DOCX o TXT.',
-      )
-    } finally {
-      setIsAttaching(false)
-    }
-  }
-
   return (
     <div className="chat-page">
       <aside
@@ -298,41 +257,35 @@ function ChatPage({
           isDocumentsOpen ? ' chat-page__sidebar--open' : ''
         }`}
         id="chat-documents-panel"
-        aria-label="Panel de documentos"
+        aria-label="Panel de selección de documentos"
       >
         <ChatDocumentsPanel
-          categories={categories}
-          categoryFilter={categoryFilter}
-          documents={filteredDocuments}
+          documents={documents}
           error={documentsError}
           isLoading={isDocumentsLoading}
-          onCategoryChange={setCategoryFilter}
           onClose={() => setIsDocumentsOpen(false)}
           onRetry={loadDocuments}
-          onSelectDocument={handleSelectDocument}
-          selectedDocumentId={activeDocumentId}
+          onToggleDocument={handleToggleDocument}
+          selectedDocumentIds={selectedDocumentIds}
         />
       </aside>
 
       <div className="chat-page__conversation">
         <ChatWindow
           activeEvidence={activeEvidence}
-          attachment={attachment}
-          attachmentError={attachmentError}
           error={messagesError}
-          isAttaching={isAttaching}
           isDocumentsOpen={isDocumentsOpen}
           isEvidenceOpen={isEvidenceOpen}
           isLoading={isMessagesLoading}
           isThinking={isThinking}
           messages={messages}
-          onAttachFile={handleAttachFile}
+          onGoToDocuments={onNavigateToDocuments}
           onOpenDocuments={handleOpenDocuments}
           onOpenEvidence={handleOpenEvidence}
           onRetry={loadConversationMessages}
           onSend={handleSend}
           onSourceClick={handleSourceClick}
-          selectedDocument={selectedDocument}
+          selectedDocuments={selectedDocuments}
           sendError={sendError}
         />
       </div>

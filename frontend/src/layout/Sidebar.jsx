@@ -148,10 +148,6 @@ function Sidebar({ activeView, collapsed, overlayOpen, onNavigate, onToggle }) {
           </span>
         </button>
 
-        <div className="sidebar__status" title="Sistema activo" aria-label="Sistema activo">
-          <span className="sidebar__status-dot" aria-hidden="true" />
-          <span className="sidebar__status-label">Sistema activo</span>
-        </div>
       </div>
     </aside>
   )

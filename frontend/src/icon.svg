@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="RAGUACO AI abstract woven knowledge icon">
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="#0F172A"/>
+  <g fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M27 61 49 39 Q54 34 59 39 L74 54" stroke="#2563EB"/>
+    <path d="M67 27 89 49 Q95 55 89 61 L75 75" stroke="#3B82F6"/>
+    <path d="M101 67 79 89 Q74 94 69 89 L54 74" stroke="#2563EB"/>
+    <path d="M61 101 39 79 Q33 73 39 67 L53 53" stroke="#3B82F6"/>
+  </g>
+  <circle cx="101" cy="67" r="7.5" fill="#22D3EE"/>
+</svg>
