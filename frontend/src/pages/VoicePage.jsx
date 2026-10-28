@@ -78,7 +78,7 @@ function VoicePage({ onOpenEvidencePage = () => {} }) {
 
   const handleOpenEvidence = (source) => {
     if (source?.id) {
-      onOpenEvidencePage(source.id)
+      onOpenEvidencePage(source)
     }
   }
 

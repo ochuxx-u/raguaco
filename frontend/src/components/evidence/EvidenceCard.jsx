@@ -17,7 +17,8 @@ function EvidenceCard({ source, isActive, onViewMore }) {
   return (
     <article className={`evidence-card${isActive ? ' evidence-card--active' : ''}`}>
       <p className="evidence-card__header">
-        {source.documento} · pág. {source.pagina}
+        {source.documento}
+        {source.pagina != null ? ` · pág. ${source.pagina}` : ''}
       </p>
 
       <p

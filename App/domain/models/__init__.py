@@ -11,18 +11,21 @@ de DTO propia.
 
 from domain.models.base import ModeloBase
 from domain.models.chunk import Chunk
-from domain.models.conversacion import Conversacion
+from domain.models.conversacion import Conversacion, ConversacionResumen
 from domain.models.documento import Documento, EstadoDocumento
-from domain.models.mensaje import Mensaje, RolMensaje
-from domain.models.referencia_fuente import ReferenciaFuente
+from domain.models.mensaje import Mensaje, MensajeConFuentes, RolMensaje
+from domain.models.referencia_fuente import FuenteDetalle, ReferenciaFuente
 from domain.models.usuario import Usuario
 
 __all__ = [
     'Chunk',
     'Conversacion',
+    'ConversacionResumen',
     'Documento',
     'EstadoDocumento',
+    'FuenteDetalle',
     'Mensaje',
+    'MensajeConFuentes',
     'ModeloBase',
     'ReferenciaFuente',
     'RolMensaje',

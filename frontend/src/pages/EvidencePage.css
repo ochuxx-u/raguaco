@@ -29,6 +29,31 @@
   line-height: 1.6;
 }
 
+.evidence-page__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px;
+  color: var(--color-text);
+  background-color: rgba(59, 130, 246, 0.12);
+  border: 1px solid var(--color-interactive);
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.evidence-page__notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.evidence-page__notice p {
+  font-size: var(--font-size-14);
+  line-height: 1.6;
+}
+
 .evidence-page__card {
   padding: 30px;
   background-color: var(--color-surface);

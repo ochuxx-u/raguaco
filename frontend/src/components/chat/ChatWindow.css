@@ -19,14 +19,23 @@
 }
 
 .chat-window__heading {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .chat-window__title {
+  max-width: 100%;
+  overflow: hidden;
   color: var(--color-text);
   font-size: var(--font-size-18);
   font-weight: var(--font-weight-extrabold);
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-window__title-context {
+  color: var(--color-text-muted);
 }
 
 .chat-window__context {

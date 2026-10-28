@@ -4,11 +4,27 @@ from uuid import UUID
 
 from psycopg import AsyncConnection
 
-from domain.models.referencia_fuente import ReferenciaFuente
+from domain.models.referencia_fuente import FuenteDetalle, ReferenciaFuente
 
 _COLUMNAS = 'id, mensaje_id, chunk_id, similitud'
 
 _PLANTILLA_FILA = '(%s, %s, %s, %s, %s)'
+
+# Datos que necesita la UI para citar una fuente: el fragmento y su documento.
+_COLUMNAS_DETALLE = """
+    rf.id,
+    rf.mensaje_id,
+    rf.chunk_id,
+    coalesce(rf.similitud, 0.0) as similitud,
+    rf.orden,
+    c.documento_id,
+    c.pagina,
+    c.indice,
+    c.contenido as fragmento,
+    d.nombre as documento,
+    d.formato,
+    d.categoria
+"""
 
 
 class ReferenciaFuenteRepository:
@@ -59,3 +75,27 @@ class ReferenciaFuenteRepository:
             (mensaje_id,),
         )
         return [ReferenciaFuente.model_validate(row) for row in await cursor.fetchall()]
+
+    async def list_detalle(self, mensaje_id: UUID) -> list[FuenteDetalle]:
+        """Fuentes de un mensaje con documento, página y fragmento."""
+        return await self.list_detalle_por_mensajes([mensaje_id])
+
+    async def list_detalle_por_mensajes(
+        self, mensaje_ids: list[UUID]
+    ) -> list[FuenteDetalle]:
+        """Fuentes de varios mensajes, para cargar un historial completo de una vez."""
+        if not mensaje_ids:
+            return []
+
+        cursor = await self._conn.execute(
+            f"""
+            select {_COLUMNAS_DETALLE}
+            from referencia_fuente rf
+            join chunk c on c.id = rf.chunk_id
+            join documento d on d.id = c.documento_id
+            where rf.mensaje_id = any(%s)
+            order by rf.mensaje_id, rf.orden nulls last, rf.id
+            """,
+            (mensaje_ids,),
+        )
+        return [FuenteDetalle.model_validate(row) for row in await cursor.fetchall()]

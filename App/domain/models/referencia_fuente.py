@@ -28,3 +28,31 @@ class ReferenciaFuente(ModeloBase):
         le=1.0,
         description='Similitud entre la consulta y el fragmento, en el rango 0..1',
     )
+
+
+class FuenteDetalle(ReferenciaFuente):
+    """Referencia enriquecida con los datos que muestra la UI (RF8).
+
+    La tabla `referencia_fuente` solo guarda los ids; el chat y la pantalla de
+    evidencia necesitan el nombre del documento, la página y el fragmento para
+    poder citarlos. Esta vista se compone en el repositorio al leer las
+    referencias y mantiene la misma identidad (`id`) que la referencia original.
+    """
+
+    documento_id: UUID = Field(description='Documento al que pertenece el fragmento')
+    documento: str = Field(description='Nombre original del documento citado')
+    formato: str = Field(description='Formato del documento (pdf, docx, txt, ...)')
+    categoria: str | None = Field(
+        default=None,
+        description='Categoría del documento; puede estar vacía',
+    )
+    pagina: int | None = Field(
+        default=None,
+        description='Página del fragmento; `None` en formatos sin paginación',
+    )
+    indice: int = Field(ge=0, description='Posición del fragmento dentro del documento')
+    fragmento: str = Field(min_length=1, description='Texto del fragmento citado')
+    orden: int | None = Field(
+        default=None,
+        description='Posición de la fuente en la respuesta (1, 2, 3, …)',
+    )

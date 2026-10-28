@@ -10,7 +10,7 @@ function normalizeText(value) {
     .toLowerCase()
 }
 
-function HistoryPage({ onOpenConversation = () => {} }) {
+function HistoryPage({ currentUser = null, onOpenConversation = () => {} }) {
   const [conversations, setConversations] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,8 +22,14 @@ function HistoryPage({ onOpenConversation = () => {} }) {
     setIsLoading(true)
     setError('')
 
+    if (!currentUser?.id) {
+      setConversations([])
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const nextConversations = await conversationsService.list()
+      const nextConversations = await conversationsService.list(currentUser.id)
 
       if (requestId !== requestRef.current) return
 
@@ -41,7 +47,7 @@ function HistoryPage({ onOpenConversation = () => {} }) {
 
   useEffect(() => {
     void loadConversations()
-  }, [])
+  }, [currentUser?.id])
 
   const filteredConversations = useMemo(() => {
     const normalizedSearch = normalizeText(searchTerm.trim())
@@ -56,7 +62,11 @@ function HistoryPage({ onOpenConversation = () => {} }) {
   }, [conversations, searchTerm])
 
   const handleSelectConversation = (conversation) => {
-    onOpenConversation(conversation.id, conversation.documentId ?? null)
+    onOpenConversation(
+      conversation.id,
+      conversation.documentId ?? null,
+      conversation.titulo,
+    )
   }
 
   const emptyMessage =

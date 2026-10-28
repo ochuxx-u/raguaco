@@ -36,17 +36,6 @@ const navigationItems = [
     ),
   },
   {
-    id: 'history',
-    label: 'Historial',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-        <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />
-        <path d="M3 3v5h5" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    ),
-  },
-  {
     id: 'voice',
     label: 'Voz',
     icon: (
@@ -54,6 +43,17 @@ const navigationItems = [
         <rect x="9" y="3" width="6" height="11" rx="3" />
         <path d="M5 11a7 7 0 0 0 14 0" />
         <path d="M12 18v3M9 21h6" />
+      </svg>
+    ),
+  },
+  {
+    id: 'history',
+    label: 'Historial',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M12 7v5l3 2" />
       </svg>
     ),
   },
@@ -69,7 +69,14 @@ const navigationItems = [
   },
 ]
 
-function Sidebar({ activeView, collapsed, overlayOpen, onNavigate, onToggle }) {
+function Sidebar({
+  activeView,
+  collapsed,
+  conversationTitle = '',
+  overlayOpen,
+  onNavigate,
+  onToggle,
+}) {
   const toggleLabel = collapsed ? 'Expandir menú lateral' : 'Colapsar menú lateral'
 
   return (
@@ -99,23 +106,32 @@ function Sidebar({ activeView, collapsed, overlayOpen, onNavigate, onToggle }) {
         <ul className="sidebar__nav-list">
           {navigationItems.map(({ id, label, icon }) => {
             const isActive = activeView === id
+            const isConversationNav = id === 'chat' || id === 'voice'
+            const displayLabel =
+              isConversationNav && conversationTitle
+                ? `${label} · ${conversationTitle}`
+                : label
 
             return (
               <li key={id}>
                 <button
                   className={`sidebar__nav-item${
                     isActive ? ' sidebar__nav-item--active' : ''
+                  }${
+                    isActive && isConversationNav && conversationTitle
+                      ? ' sidebar__nav-item--future'
+                      : ''
                   }`}
                   type="button"
                   aria-current={isActive ? 'page' : undefined}
-                  aria-label={label}
-                  title={collapsed ? label : undefined}
+                  aria-label={displayLabel}
+                  title={displayLabel}
                   onClick={() => onNavigate(id)}
                 >
                   <span className="sidebar__nav-icon" aria-hidden="true">
                     {icon}
                   </span>
-                  <span className="sidebar__nav-label">{label}</span>
+                  <span className="sidebar__nav-label">{displayLabel}</span>
                 </button>
               </li>
             )

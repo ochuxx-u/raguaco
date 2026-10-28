@@ -1,18 +1,28 @@
-// Punto único de acceso a conversaciones e historial (FRONTEND_SPEC §9.2).
-// Sin mocks: el historial arranca vacío hasta conectar la API de FastAPI.
-const NOT_CONNECTED = 'La conexión con el backend todavía no está disponible.'
+import { mapConversation, mapMessage } from '../utils/conversations.js'
+import { apiFetch } from './http.js'
 
+// Punto único de acceso a conversaciones e historial (FRONTEND_SPEC §9.2).
 const conversationsService = {
-  async list() {
-    return []
+  async list(usuarioId) {
+    if (!usuarioId) return []
+
+    const data = await apiFetch(
+      `/v1/models/conversations/?usuario_id=${encodeURIComponent(usuarioId)}`,
+    )
+
+    return (data ?? []).map(mapConversation)
   },
 
-  async getById() {
-    throw new Error(NOT_CONNECTED)
+  getById(id) {
+    return apiFetch(`/v1/models/conversations/${id}`)
   },
 
   async getMessages(id) {
-    return []
+    if (!id) return []
+
+    const data = await apiFetch(`/v1/models/conversations/${id}/messages`)
+
+    return (data ?? []).map((message) => mapMessage(message))
   },
 }
 

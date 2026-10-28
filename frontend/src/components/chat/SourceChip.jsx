@@ -1,7 +1,8 @@
 import './SourceChip.css'
 
 function SourceChip({ source, index, isActive, onClick }) {
-  const evidenceLabel = `Ver evidencia de ${source.documento}, página ${source.pagina}`
+  const pageLabel = source.pagina != null ? `página ${source.pagina}` : 'sin paginación'
+  const evidenceLabel = `Ver evidencia de ${source.documento}, ${pageLabel}`
 
   return (
     <button
@@ -11,7 +12,8 @@ function SourceChip({ source, index, isActive, onClick }) {
       title={evidenceLabel}
       onClick={onClick}
     >
-      Fuente {index + 1} · pág. {source.pagina}
+      Fuente {index + 1}
+      {source.pagina != null ? ` · pág. ${source.pagina}` : ''}
     </button>
   )
 }

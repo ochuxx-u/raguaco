@@ -4,6 +4,7 @@ import './ChatWindow.css'
 
 function ChatWindow({
   activeEvidence,
+  conversationTitle = '',
   error,
   hasSelectedDocuments = true,
   isDocumentsOpen,
@@ -12,6 +13,7 @@ function ChatWindow({
   isThinking,
   messages,
   onGoToDocuments,
+  onGoToVoice,
   onOpenDocuments,
   onOpenEvidence,
   onRetry,
@@ -20,6 +22,7 @@ function ChatWindow({
   selectedDocuments = [],
   sendError,
 }) {
+  const chatTitle = conversationTitle ? `Chat · ${conversationTitle}` : 'Chat'
   const selectedCount = selectedDocuments.length
   const contextLabel =
     selectedCount === 0
@@ -36,8 +39,14 @@ function ChatWindow({
     <section className="chat-window" aria-labelledby="chat-title">
       <header className="chat-window__header">
         <div className="chat-window__heading">
-          <h1 className="chat-window__title" id="chat-title">
-            Chat RAG
+          <h1 className="chat-window__title" id="chat-title" title={chatTitle}>
+            Chat
+            {conversationTitle && (
+              <span className="chat-window__title-context">
+                {' · '}
+                {conversationTitle}
+              </span>
+            )}
           </h1>
           <p className="chat-window__context" title={contextTitle}>
             {contextLabel}
@@ -120,6 +129,7 @@ function ChatWindow({
           hasSelectedDocuments={hasSelectedDocuments}
           isSending={isThinking}
           onGoToDocuments={onGoToDocuments}
+          onGoToVoice={onGoToVoice}
           onSend={onSend}
         />
       </div>

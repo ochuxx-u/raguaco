@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 from pydantic import Field, model_validator
 
 from domain.models.base import ModeloBase
+from domain.models.referencia_fuente import FuenteDetalle
 
 # El diagrama de clases declara `rol` como `string`; se acota a los tres roles que
 # usa el sistema para no dejar valores libres que rompan el historial.
@@ -55,3 +56,17 @@ class Mensaje(ModeloBase):
                 f'un mensaje de usuario no puede superar los {MAX_LONGITUD_CONSULTA} caracteres'
             )
         return self
+
+
+class MensajeConFuentes(Mensaje):
+    """Mensaje del historial junto a las fuentes que lo respaldan (RF8).
+
+    Es la forma que consume el chat al abrir una conversación: cada respuesta
+    del asistente llega con sus referencias ya enriquecidas para poder pintar
+    los chips `Fuente n · pág. x` y el panel de fuentes y evidencia.
+    """
+
+    fuentes: list[FuenteDetalle] = Field(
+        default_factory=list,
+        description='Fuentes citadas por el mensaje, en el orden en que aparecen',
+    )

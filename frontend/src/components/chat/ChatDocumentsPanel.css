@@ -56,6 +56,45 @@
   overscroll-behavior: contain;
 }
 
+.chat-documents__footer {
+  flex: 0 0 auto;
+  padding: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.chat-documents__new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  color: var(--color-interactive);
+  background-color: rgba(59, 130, 246, 0.08);
+  border: 1px solid var(--color-interactive);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.chat-documents__new:hover {
+  color: var(--color-accent);
+  background-color: rgba(59, 130, 246, 0.16);
+  border-color: var(--color-accent);
+}
+
+.chat-documents__new svg {
+  flex: 0 0 auto;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .chat-documents__list {
   display: flex;
   flex-direction: column;

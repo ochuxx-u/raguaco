@@ -112,6 +112,22 @@
   color: var(--color-accent);
 }
 
+/* Chat y Voz son pestañas de conversación: al estar activas usan el acento
+   verde futurista en lugar del cian. */
+.sidebar__nav-item--future {
+  background-color: var(--color-future-bg);
+}
+
+.sidebar__nav-item--future::before {
+  background-color: var(--color-future);
+  box-shadow: 0 0 10px var(--color-future-glow);
+}
+
+.sidebar__nav-item--future .sidebar__nav-icon {
+  color: var(--color-future);
+  filter: drop-shadow(0 0 6px var(--color-future-glow));
+}
+
 .sidebar__nav-icon {
   display: inline-flex;
   flex: 0 0 auto;
@@ -134,6 +150,7 @@
 }
 
 .sidebar__nav-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -63,7 +63,7 @@ from uuid import UUID
 from domain.models.base import ModeloBase
 from domain.models.chunk import Chunk
 from domain.models.mensaje import Mensaje
-from domain.models.referencia_fuente import ReferenciaFuente
+from domain.models.referencia_fuente import FuenteDetalle, ReferenciaFuente
 from infrastructure.llm.llm_service import LLMService
 from infrastructure.llm.plain_text import limpiar_markdown
 
@@ -105,13 +105,14 @@ ROLES_CHAT = {'sistema': 'system', 'usuario': 'user', 'asistente': 'assistant'}
 class RespuestaRAG(ModeloBase):
     """Respuesta del asistente junto a las fuentes que la respaldan (RF8).
 
-    Cada `ReferenciaFuente` vincula el mensaje con el `Chunk` citado y su
-    similitud (RNF7, trazabilidad); la posición en `referencias` se corresponde
-    con la marca `[n]` citada en el texto de la respuesta.
+    Cada `FuenteDetalle` vincula el mensaje con el `Chunk` citado, su similitud
+    (RNF7, trazabilidad) y los datos que muestra la UI (documento, página y
+    fragmento); la posición en `referencias` se corresponde con la marca `[n]`
+    citada en el texto de la respuesta.
     """
 
     mensaje: Mensaje
-    referencias: list[ReferenciaFuente]
+    referencias: list[FuenteDetalle]
 
 
 class RAGService:
@@ -206,7 +207,10 @@ class RAGService:
 
         # agregarMensaje(conversacionId, mensaje, referencias) → ok
         await self._conversation_service.agregar_mensaje(conversacion_id, mensaje, referencias)
-        return RespuestaRAG(mensaje=mensaje, referencias=referencias)
+        # Se devuelven las fuentes enriquecidas (documento, página, fragmento)
+        # para que el chat pueda citarlas sin una petición adicional (RF8).
+        fuentes = await self._conversation_service.obtener_fuentes(mensaje.id)
+        return RespuestaRAG(mensaje=mensaje, referencias=fuentes)
 
     def _mensajes_llm(
         self,

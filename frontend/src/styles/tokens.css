@@ -11,6 +11,10 @@
   --color-primary: #2563EB;
   --color-interactive: #3B82F6;
   --color-accent: #22D3EE;
+  /* Acento verde futurista para las pestañas de conversación (Chat y Voz) */
+  --color-future: #4ADE80;
+  --color-future-bg: rgba(74, 222, 128, 0.1);
+  --color-future-glow: rgba(74, 222, 128, 0.45);
   --color-danger: #FF8A80;
   --color-danger-bg: #2A1215;
   --color-danger-border: #5C2B2E;

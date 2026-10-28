@@ -22,6 +22,7 @@ function getViewport() {
 function AppLayout({
   activeView,
   children,
+  conversationTitle = '',
   isSidebarCollapsed,
   onNavigate,
   onToggleSidebar,
@@ -97,6 +98,7 @@ function AppLayout({
       <Sidebar
         activeView={activeView}
         collapsed={isSidebarCollapsedForViewport}
+        conversationTitle={conversationTitle}
         overlayOpen={isOverlayOpen}
         onNavigate={handleNavigateFromSidebar}
         onToggle={handleToggleSidebar}

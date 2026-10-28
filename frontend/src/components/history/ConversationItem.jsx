@@ -19,7 +19,9 @@ function ConversationItem({ conversation, onSelect }) {
       </span>
 
       <span className="conversation-item__meta">
-        {conversation.fecha} · {conversation.mensajeCount} mensajes
+        {conversation.fecha ? `${conversation.fecha} · ` : ''}
+        {conversation.mensajeCount}{' '}
+        {conversation.mensajeCount === 1 ? 'mensaje' : 'mensajes'}
       </span>
     </button>
   )

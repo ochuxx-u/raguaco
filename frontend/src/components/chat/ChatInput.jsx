@@ -16,6 +16,7 @@ function ChatInput({
   hasSelectedDocuments = true,
   isSending = false,
   onGoToDocuments = () => {},
+  onGoToVoice = () => {},
   onSend,
 }) {
   const [value, setValue] = useState('')
@@ -122,8 +123,9 @@ function ChatInput({
       <button
         className="chat-input__icon-button chat-input__voice"
         type="button"
-        aria-label="Hablar con RAGUACO"
-        title="Hablar con RAGUACO"
+        aria-label="Ir a Voz para hablar con RAGUACO"
+        title="Ir a Voz para hablar con RAGUACO"
+        onClick={onGoToVoice}
       >
         <svg
           viewBox="0 0 24 24"

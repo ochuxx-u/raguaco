@@ -1,47 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
 import EvidenceViewer from '../components/evidence/EvidenceViewer.jsx'
-import evidenceService from '../services/evidenceService.js'
 import './EvidencePage.css'
 
 function EvidencePage({
   onBackToChat = () => {},
   onOpenDocument = () => {},
-  selectedEvidenceId = null,
+  selectedEvidence = null,
 }) {
-  const [evidence, setEvidence] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const requestRef = useRef(0)
-
-  const loadEvidence = async () => {
-    const requestId = ++requestRef.current
-    setIsLoading(true)
-    setError('')
-
-    try {
-      const nextEvidence = selectedEvidenceId
-        ? await evidenceService.getById(selectedEvidenceId)
-        : await evidenceService.getDefault()
-
-      if (requestId !== requestRef.current) return
-
-      setEvidence(nextEvidence)
-    } catch {
-      if (requestId === requestRef.current) {
-        setEvidence(null)
-        setError('No se pudo cargar la evidencia seleccionada.')
-      }
-    } finally {
-      if (requestId === requestRef.current) {
-        setIsLoading(false)
-      }
-    }
-  }
-
-  useEffect(() => {
-    void loadEvidence()
-  }, [selectedEvidenceId])
-
   return (
     <section className="evidence-page" aria-labelledby="evidence-title">
       <header className="evidence-page__header">
@@ -54,45 +18,45 @@ function EvidencePage({
       </header>
 
       <div className="evidence-page__content">
-        {isLoading && (
-          <div className="evidence-page__state" role="status">
-            <span className="evidence-page__spinner" aria-hidden="true" />
-            <p>Cargando evidencia…</p>
+        {!selectedEvidence && (
+          <div className="evidence-page__notice" role="status">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v5" />
+              <path d="M12 8h.01" />
+            </svg>
+            <p>
+              Selecciona los detalles de una evidencia desde Chat → Fuentes y
+              evidencia → Ver más.
+            </p>
           </div>
         )}
 
-        {!isLoading && error && (
-          <div className="evidence-page__state evidence-page__state--error" role="alert">
-            <p>{error}</p>
-            <button className="evidence-page__retry" type="button" onClick={loadEvidence}>
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {!isLoading && !error && !evidence && (
-          <div className="evidence-page__state">
-            <p>Aún no hay evidencia disponible.</p>
-          </div>
-        )}
-
-        {!isLoading && !error && evidence && (
+        {selectedEvidence && (
           <div className="evidence-page__card">
-            <EvidenceViewer source={evidence} />
+            <EvidenceViewer source={selectedEvidence} />
 
             <div className="evidence-page__actions">
               <button
                 className="evidence-page__button evidence-page__button--primary"
                 type="button"
-                disabled={!evidence.documentId}
-                onClick={() => onOpenDocument(evidence.documentId)}
+                disabled={!selectedEvidence.documentId}
+                onClick={() => onOpenDocument(selectedEvidence.documentId)}
               >
-                Abrir documento
+                Ver documento
               </button>
               <button
                 className="evidence-page__button evidence-page__button--secondary"
                 type="button"
-                onClick={onBackToChat}
+                onClick={() => onBackToChat(selectedEvidence.conversationId ?? null)}
               >
                 Volver al chat
               </button>

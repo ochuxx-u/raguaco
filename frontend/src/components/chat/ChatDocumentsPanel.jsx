@@ -6,6 +6,7 @@ function ChatDocumentsPanel({
   isLoading,
   onClose,
   onRetry,
+  onStartNewConversation = () => {},
   onToggleDocument,
   selectedDocumentIds = [],
 }) {
@@ -92,6 +93,27 @@ function ChatDocumentsPanel({
           </>
         )}
       </div>
+
+      <footer className="chat-documents__footer">
+        <button
+          className="chat-documents__new"
+          type="button"
+          onClick={onStartNewConversation}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nueva conversación
+        </button>
+      </footer>
     </section>
   )
 }

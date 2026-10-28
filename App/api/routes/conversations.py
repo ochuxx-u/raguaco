@@ -15,20 +15,21 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 from psycopg.errors import ForeignKeyViolation
 
-from api.deps import ConversacionRepositoryDep, MensajeRepositoryDep
-from domain.models.conversacion import Conversacion
-from domain.models.mensaje import Mensaje
+from api.deps import ConversacionRepositoryDep, ConversationServiceDep
+from domain.models.conversacion import Conversacion, ConversacionResumen
+from domain.models.mensaje import MensajeConFuentes
 
 router = APIRouter(prefix='/v1/models/conversations', tags=['conversations'])
 
 
 @router.get(
     '/',
-    response_model=list[Conversacion],
+    response_model=list[ConversacionResumen],
     summary='Listar conversaciones',
     description=(
         'Devuelve las conversaciones del usuario indicado, de la más reciente a la más '
-        'antigua. `usuario_id` es obligatorio.'
+        'antigua, con su última pregunta y el número de mensajes para el Historial. '
+        '`usuario_id` es obligatorio.'
     ),
     responses={
         422: {'description': 'Falta `usuario_id` o no es un UUID válido'},
@@ -40,8 +41,8 @@ async def list_conversations(
         UUID,
         Query(description='Identificador del usuario dueño de las conversaciones'),
     ],
-) -> list[Conversacion]:
-    return await repo.list(usuario_id)
+) -> list[ConversacionResumen]:
+    return await repo.list_resumen(usuario_id)
 
 
 @router.post(
@@ -114,11 +115,13 @@ async def get_conversation(
 
 @router.get(
     '/{conversacion_id}/messages',
-    response_model=list[Mensaje],
+    response_model=list[MensajeConFuentes],
     summary='Obtener los mensajes de una conversación',
     description=(
         'Devuelve el historial de mensajes de la conversación, del más antiguo al más '
-        'reciente. Si la conversación todavía no tiene mensajes, devuelve una lista vacía.'
+        'reciente, con las fuentes de cada respuesta enriquecidas con documento, página '
+        'y fragmento (RF8). Si la conversación todavía no tiene mensajes, devuelve una '
+        'lista vacía.'
     ),
     responses={
         404: {'description': 'No existe una conversación con ese identificador'},
@@ -127,15 +130,15 @@ async def get_conversation(
 )
 async def list_messages(
     conversaciones: ConversacionRepositoryDep,
-    mensajes: MensajeRepositoryDep,
+    conversation_service: ConversationServiceDep,
     conversacion_id: Annotated[
         UUID,
         Path(description='Identificador de la conversación'),
     ],
-) -> list[Mensaje]:
+) -> list[MensajeConFuentes]:
     if await conversaciones.get(conversacion_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No existe una conversación con el id {conversacion_id}',
         )
-    return await mensajes.list(conversacion_id)
+    return await conversation_service.obtener_historial_con_fuentes(conversacion_id)

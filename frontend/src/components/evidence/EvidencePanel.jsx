@@ -20,7 +20,7 @@ function EvidencePanel({ activeSourceId, focusToken = 0, onClose, onViewMore, so
     <section className="evidence-panel" aria-labelledby="evidence-panel-title">
       <header className="evidence-panel__header">
         <h2 className="evidence-panel__title" id="evidence-panel-title">
-          Fuentes y evidencia
+          Fuentes
         </h2>
 
         {onClose && (

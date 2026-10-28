@@ -15,8 +15,8 @@ diagrama declara opcional (`{pregunta, conversacionId?}`).
 from uuid import UUID
 
 from domain.models.conversacion import Conversacion
-from domain.models.mensaje import Mensaje
-from domain.models.referencia_fuente import ReferenciaFuente
+from domain.models.mensaje import Mensaje, MensajeConFuentes
+from domain.models.referencia_fuente import FuenteDetalle, ReferenciaFuente
 from infrastructure.db.repositories.conversacion_repository import ConversacionRepository
 from infrastructure.db.repositories.mensaje_repository import MensajeRepository
 from infrastructure.db.repositories.referencia_fuente_repository import ReferenciaFuenteRepository
@@ -52,6 +52,35 @@ class ConversationService:
         """Historial de la conversación, del más antiguo al más reciente."""
         return await self._mensajes.list(conversacion_id)
 
+    async def obtener_historial_con_fuentes(
+        self, conversacion_id: UUID
+    ) -> list[MensajeConFuentes]:
+        """Historial con las fuentes de cada respuesta ya enriquecidas (RF8).
+
+        Las referencias se leen en una sola consulta para todos los mensajes y
+        se agrupan en memoria: el chat reconstruye así los chips de fuentes al
+        abrir una conversación desde el Historial.
+        """
+        mensajes = await self._mensajes.list(conversacion_id)
+        fuentes = await self._referencias.list_detalle_por_mensajes(
+            [mensaje.id for mensaje in mensajes]
+        )
+        fuentes_por_mensaje: dict[UUID, list[FuenteDetalle]] = {}
+        for fuente in fuentes:
+            fuentes_por_mensaje.setdefault(fuente.mensaje_id, []).append(fuente)
+
+        return [
+            MensajeConFuentes(
+                **mensaje.model_dump(),
+                fuentes=fuentes_por_mensaje.get(mensaje.id, []),
+            )
+            for mensaje in mensajes
+        ]
+
+    async def obtener_fuentes(self, mensaje_id: UUID) -> list[FuenteDetalle]:
+        """Fuentes de una respuesta con documento, página y fragmento."""
+        return await self._referencias.list_detalle(mensaje_id)
+
     async def obtener(self, conversacion_id: UUID) -> Conversacion | None:
         """Conversación por id, o `None` si no existe.
 
@@ -78,4 +107,6 @@ class ConversationService:
         guardado = await self._mensajes.create(mensaje)
         if referencias:
             await self._referencias.create_many(referencias)
+        # El Historial ordena y fecha por actividad, no por creación.
+        await self._conversaciones.touch(conversacion_id)
         return guardado

@@ -30,3 +30,21 @@ class Conversacion(ModeloBase):
         default_factory=lambda: datetime.now(timezone.utc),
         description='Momento en que se creó la conversación',
     )
+    fecha_actualizacion: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description='Momento del último mensaje; es la fecha que muestra el Historial',
+    )
+
+
+class ConversacionResumen(Conversacion):
+    """Conversación con los datos agregados que muestra el Historial."""
+
+    ultima_pregunta: str | None = Field(
+        default=None,
+        description='Texto de la última pregunta del usuario; `None` si no hay mensajes',
+    )
+    mensaje_count: int = Field(
+        default=0,
+        ge=0,
+        description='Número de mensajes de la conversación',
+    )

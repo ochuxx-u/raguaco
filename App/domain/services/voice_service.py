@@ -46,7 +46,7 @@ import numpy as np
 from core.config import settings
 from domain.models.base import ModeloBase
 from domain.models.mensaje import MAX_LONGITUD_CONSULTA, Mensaje
-from domain.models.referencia_fuente import ReferenciaFuente
+from domain.models.referencia_fuente import FuenteDetalle
 from infrastructure.tts.kokoro_tts import KokoroTTS, TTSError
 from infrastructure.tts.tts_text import limpiar_para_voz, segmentar_para_voz
 
@@ -109,7 +109,7 @@ class RespuestaVoz(ModeloBase):
     respuesta: str
     conversacion_id: UUID
     mensaje: Mensaje
-    referencias: list[ReferenciaFuente]
+    referencias: list[FuenteDetalle]
 
 
 class VozError(RuntimeError):

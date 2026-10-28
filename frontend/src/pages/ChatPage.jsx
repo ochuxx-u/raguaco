@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import ChatDocumentsPanel from '../components/chat/ChatDocumentsPanel.jsx'
 import ChatWindow from '../components/chat/ChatWindow.jsx'
 import EvidencePanel from '../components/evidence/EvidencePanel.jsx'
+import conversationsService from '../services/conversationsService.js'
 import documentsService from '../services/documentsService.js'
 import queriesService from '../services/queriesService.js'
+import { deriveConversationTitle } from '../utils/conversations.js'
 import './ChatPage.css'
 
 const INITIAL_EVIDENCE = {
@@ -14,9 +16,13 @@ const INITIAL_EVIDENCE = {
 function ChatPage({
   conversationId,
   currentUser = null,
+  onConversationCreated = () => {},
+  onConversationTitleChange = () => {},
   onNavigateToDocuments = () => {},
+  onNavigateToVoice = () => {},
   onOpenEvidencePage = () => {},
   onSelectedDocumentsChange = () => {},
+  onStartNewConversation = () => {},
   selectedDocumentIds: initialSelectedDocumentIds = [],
 }) {
   const [documents, setDocuments] = useState([])
@@ -26,6 +32,7 @@ function ChatPage({
     initialSelectedDocumentIds.filter(Boolean),
   )
 
+  const [conversationTitle, setConversationTitle] = useState('')
   const [messages, setMessages] = useState([])
   const [isMessagesLoading, setIsMessagesLoading] = useState(true)
   const [messagesError, setMessagesError] = useState('')
@@ -40,6 +47,12 @@ function ChatPage({
   const messageSequence = useRef(0)
   const documentsRequestRef = useRef(0)
   const messagesRequestRef = useRef(0)
+  const titleRequestRef = useRef(0)
+  const sendRequestRef = useRef(0)
+  // Conversación cuyo historial ya está en pantalla. Tras crear una
+  // conversación se marca su id para no recargar los mensajes que el backend
+  // acaba de guardar y que ya se muestran.
+  const loadedConversationIdRef = useRef(undefined)
   // Distingue la selección inicial (primer documento por defecto) de una
   // selección vacía elegida por el usuario: si ya ha tocado el panel, no se
   // vuelve a marcar nada automáticamente.
@@ -73,16 +86,43 @@ function ChatPage({
     }
   }
 
+  const loadConversationTitle = async (id) => {
+    const requestId = ++titleRequestRef.current
+
+    if (!id) {
+      setConversationTitle('')
+      return
+    }
+
+    try {
+      const conversation = await conversationsService.getById(id)
+      const title = conversation?.titulo ?? ''
+
+      if (requestId === titleRequestRef.current) {
+        setConversationTitle(title)
+        onConversationTitleChange(id, title)
+      }
+    } catch {
+      // El título es contexto, no bloquea el chat: se mantiene «Chat».
+    }
+  }
+
   const loadConversationMessages = async () => {
     const requestId = ++messagesRequestRef.current
     setMessages([])
     setActiveEvidence(INITIAL_EVIDENCE)
-    setIsMessagesLoading(true)
     setMessagesError('')
+
+    if (!conversationId) {
+      setIsMessagesLoading(false)
+      return
+    }
+
+    setIsMessagesLoading(true)
 
     try {
       const conversationMessages =
-        await queriesService.getConversationMessages(conversationId)
+        await conversationsService.getMessages(conversationId)
 
       if (requestId !== messagesRequestRef.current) return
 
@@ -107,10 +147,27 @@ function ChatPage({
   }
 
   useEffect(() => {
+    return () => {
+      // Una respuesta que llegue después de salir del chat no debe cambiar la
+      // conversación activa ni poblar otra vista.
+      sendRequestRef.current += 1
+    }
+  }, [])
+
+  useEffect(() => {
     void loadDocuments()
   }, [currentUser?.id])
 
   useEffect(() => {
+    void loadConversationTitle(conversationId)
+  }, [conversationId])
+
+  useEffect(() => {
+    if (loadedConversationIdRef.current === conversationId) {
+      return
+    }
+
+    loadedConversationIdRef.current = conversationId
     void loadConversationMessages()
   }, [conversationId])
 
@@ -189,7 +246,7 @@ function ChatPage({
 
   const handleOpenEvidenceFromChat = (source) => {
     if (source?.id) {
-      onOpenEvidencePage(source.id)
+      onOpenEvidencePage(source)
     }
   }
 
@@ -208,6 +265,25 @@ function ChatPage({
     setIsEvidenceOpen(false)
   }
 
+  const handleStartNewConversation = () => {
+    // Se invalida cualquier respuesta en curso para que no vuelva a poblar el
+    // chat que el usuario acaba de reiniciar.
+    sendRequestRef.current += 1
+    messagesRequestRef.current += 1
+    titleRequestRef.current += 1
+    loadedConversationIdRef.current = null
+    setMessages([])
+    setMessagesError('')
+    setIsMessagesLoading(false)
+    setActiveEvidence(INITIAL_EVIDENCE)
+    setConversationTitle('')
+    setIsThinking(false)
+    setSendError('')
+    setIsDocumentsOpen(false)
+    setIsEvidenceOpen(false)
+    onStartNewConversation()
+  }
+
   const createMessageId = (role) => {
     const id = `${role}-${Date.now()}-${messageSequence.current}`
     messageSequence.current += 1
@@ -218,6 +294,8 @@ function ChatPage({
     const trimmedQuestion = question.trim()
 
     if (!trimmedQuestion || isThinking || selectedDocumentIds.length === 0) return
+
+    const requestId = ++sendRequestRef.current
 
     setMessages((currentMessages) => [
       ...currentMessages,
@@ -236,25 +314,32 @@ function ChatPage({
         documentIds: selectedDocumentIds,
         usuarioId: currentUser?.id,
       })
-      const sources = Array.isArray(result.fuentes) ? result.fuentes : []
-      const hasEvidence = sources.length > 0 && Boolean(result.respuesta)
-      const assistantMessage = {
-        id: createMessageId('assistant'),
-        role: 'assistant',
-        content: hasEvidence ? result.respuesta : null,
-        sources: hasEvidence ? sources : [],
-        hasEvidence,
-      }
+
+      if (requestId !== sendRequestRef.current) return
+
+      const assistantMessage = result.message
 
       setMessages((currentMessages) => [...currentMessages, assistantMessage])
       setActiveEvidence({
         messageId: assistantMessage.id,
-        sourceId: hasEvidence ? assistantMessage.sources[0]?.id ?? null : null,
+        sourceId: assistantMessage.sources[0]?.id ?? null,
       })
+
+      if (!conversationId && result.conversationId) {
+        const title = deriveConversationTitle(trimmedQuestion)
+
+        loadedConversationIdRef.current = result.conversationId
+        setConversationTitle(title)
+        onConversationCreated(result.conversationId, title)
+      }
     } catch {
-      setSendError('No se pudo obtener una respuesta. Inténtalo de nuevo.')
+      if (requestId === sendRequestRef.current) {
+        setSendError('No se pudo obtener una respuesta. Inténtalo de nuevo.')
+      }
     } finally {
-      setIsThinking(false)
+      if (requestId === sendRequestRef.current) {
+        setIsThinking(false)
+      }
     }
   }
 
@@ -273,6 +358,7 @@ function ChatPage({
           isLoading={isDocumentsLoading}
           onClose={() => setIsDocumentsOpen(false)}
           onRetry={loadDocuments}
+          onStartNewConversation={handleStartNewConversation}
           onToggleDocument={handleToggleDocument}
           selectedDocumentIds={selectedDocumentIds}
         />
@@ -281,6 +367,7 @@ function ChatPage({
       <div className="chat-page__conversation">
         <ChatWindow
           activeEvidence={activeEvidence}
+          conversationTitle={conversationTitle}
           error={messagesError}
           hasSelectedDocuments={selectedDocumentIds.length > 0}
           isDocumentsOpen={isDocumentsOpen}
@@ -289,6 +376,7 @@ function ChatPage({
           isThinking={isThinking}
           messages={messages}
           onGoToDocuments={onNavigateToDocuments}
+          onGoToVoice={onNavigateToVoice}
           onOpenDocuments={handleOpenDocuments}
           onOpenEvidence={handleOpenEvidence}
           onRetry={loadConversationMessages}

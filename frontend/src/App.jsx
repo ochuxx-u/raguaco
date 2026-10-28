@@ -17,10 +17,13 @@ function App() {
     currentUser ? 'dashboard' : 'landing',
   )
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  // Conversación activa en caché: se conserva al navegar entre pestañas hasta
+  // que el usuario crea una nueva desde el chat.
   const [selectedConversationId, setSelectedConversationId] = useState(null)
+  const [selectedConversationTitle, setSelectedConversationTitle] = useState('')
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
   const [selectedDocumentIds, setSelectedDocumentIds] = useState([])
-  const [selectedEvidenceId, setSelectedEvidenceId] = useState(null)
+  const [selectedEvidence, setSelectedEvidence] = useState(null)
   const [isProfileSelectorOpen, setIsProfileSelectorOpen] = useState(false)
   const [pendingView, setPendingView] = useState(null)
 
@@ -32,8 +35,33 @@ function App() {
     }
 
     setActiveView(view)
-    setSelectedConversationId(conversationId)
+
+    // La conversación activa se conserva al navegar entre pestañas (Chat, Voz,
+    // Historial…). Solo se cambia al abrir una conversación del Historial o al
+    // iniciar una nueva desde el botón «Nueva conversación».
+    if (conversationId) {
+      setSelectedConversationId(conversationId)
+    }
+
+    // «Preguntar» desde un documento abre un chat nuevo enfocado en ese archivo.
+    if (view === 'chat' && !conversationId && documentId) {
+      setSelectedConversationId(null)
+      setSelectedConversationTitle('')
+      setSelectedEvidence(null)
+    }
+
     setSelectedDocumentId(documentId)
+
+    // Al cambiar de conversación, la evidencia anterior deja de estar
+    // seleccionada: Evidencia debe mostrar su aviso, no una fuente de una
+    // conversación que ya no está abierta.
+    if (
+      conversationId &&
+      selectedEvidence &&
+      conversationId !== selectedEvidence.conversationId
+    ) {
+      setSelectedEvidence(null)
+    }
 
     if (view === 'chat' && documentId) {
       setSelectedDocumentIds([documentId])
@@ -57,9 +85,10 @@ function App() {
     setActiveView(pendingView ?? 'dashboard')
     setPendingView(null)
     setSelectedConversationId(null)
+    setSelectedConversationTitle('')
     setSelectedDocumentId(null)
     setSelectedDocumentIds([])
-    setSelectedEvidenceId(null)
+    setSelectedEvidence(null)
   }
 
   const handleCloseProfileSelector = () => {
@@ -78,9 +107,10 @@ function App() {
     setIsProfileSelectorOpen(false)
     setPendingView(null)
     setSelectedConversationId(null)
+    setSelectedConversationTitle('')
     setSelectedDocumentId(null)
     setSelectedDocumentIds([])
-    setSelectedEvidenceId(null)
+    setSelectedEvidence(null)
     setActiveView('landing')
   }
 
@@ -93,16 +123,48 @@ function App() {
     setSelectedDocumentId(documentIds[0] ?? null)
   }, [])
 
-  const handleOpenConversation = (conversationId, documentId = null) => {
+  const handleOpenConversation = (
+    conversationId,
+    documentId = null,
+    conversationTitle = '',
+  ) => {
     handleNavigate('chat', conversationId, documentId)
+    setSelectedConversationTitle(conversationTitle ?? '')
   }
 
-  const handleOpenEvidence = useCallback((evidenceId) => {
-    setSelectedEvidenceId(evidenceId)
+  const handleOpenEvidence = useCallback((evidence) => {
+    if (!evidence) return
+
+    setSelectedEvidence(evidence)
     setActiveView('evidence')
   }, [])
 
-  const handleBackToChat = () => {
+  const handleConversationCreated = useCallback(
+    (conversationId, conversationTitle = '') => {
+      setSelectedConversationId(conversationId)
+      setSelectedConversationTitle(conversationTitle ?? '')
+    },
+    [],
+  )
+
+  const handleConversationTitleChange = (conversationId, conversationTitle) => {
+    if (conversationId === selectedConversationId) {
+      setSelectedConversationTitle(conversationTitle ?? '')
+    }
+  }
+
+  const handleNewConversation = () => {
+    setSelectedConversationId(null)
+    setSelectedConversationTitle('')
+    setSelectedEvidence(null)
+    setActiveView('chat')
+  }
+
+  const handleBackToChat = (conversationId = null) => {
+    if (conversationId) {
+      setSelectedConversationId(conversationId)
+    }
+
     setActiveView('chat')
   }
 
@@ -133,14 +195,23 @@ function App() {
           <ChatPage
             conversationId={selectedConversationId}
             currentUser={currentUser}
+            onConversationCreated={handleConversationCreated}
+            onConversationTitleChange={handleConversationTitleChange}
             onNavigateToDocuments={() => handleNavigate('documents')}
+            onNavigateToVoice={() => handleNavigate('voice')}
             onOpenEvidencePage={handleOpenEvidence}
             onSelectedDocumentsChange={handleSelectedDocumentsChange}
+            onStartNewConversation={handleNewConversation}
             selectedDocumentIds={selectedDocumentIds}
           />
         )
       case 'history':
-        return <HistoryPage onOpenConversation={handleOpenConversation} />
+        return (
+          <HistoryPage
+            currentUser={currentUser}
+            onOpenConversation={handleOpenConversation}
+          />
+        )
       case 'voice':
         return <VoicePage onOpenEvidencePage={handleOpenEvidence} />
       case 'evidence':
@@ -148,7 +219,7 @@ function App() {
           <EvidencePage
             onBackToChat={handleBackToChat}
             onOpenDocument={handleOpenEvidenceDocument}
-            selectedEvidenceId={selectedEvidenceId}
+            selectedEvidence={selectedEvidence}
           />
         )
       default:
@@ -165,6 +236,9 @@ function App() {
       ) : (
         <AppLayout
           activeView={activeView}
+          conversationTitle={
+            selectedConversationId ? selectedConversationTitle : ''
+          }
           isSidebarCollapsed={isSidebarCollapsed}
           onNavigate={handleNavigate}
           onToggleSidebar={handleToggleSidebar}
