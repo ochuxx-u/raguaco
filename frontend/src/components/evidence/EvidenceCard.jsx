@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import './EvidenceCard.css'
 
-function EvidenceCard({ source, isActive, onViewMore }) {
+function EvidenceCard({ source, isActive, onSelect, onViewMore }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const hasExternalAction = typeof onViewMore === 'function'
+  const hasSelectionAction = typeof onSelect === 'function'
 
   const handleToggle = () => {
     if (hasExternalAction) {
@@ -14,20 +15,41 @@ function EvidenceCard({ source, isActive, onViewMore }) {
     setIsExpanded((expanded) => !expanded)
   }
 
-  return (
-    <article className={`evidence-card${isActive ? ' evidence-card--active' : ''}`}>
-      <p className="evidence-card__header">
+  const content = (
+    <>
+      <span className="evidence-card__header">
         {source.documento}
         {source.pagina != null ? ` · pág. ${source.pagina}` : ''}
-      </p>
+      </span>
 
-      <p
+      <span
         className={`evidence-card__fragment${
           isExpanded ? ' evidence-card__fragment--expanded' : ''
         }`}
       >
         {source.fragmento}
-      </p>
+      </span>
+    </>
+  )
+
+  return (
+    <article
+      className={`evidence-card${isActive ? ' evidence-card--active' : ''}${
+        hasSelectionAction ? ' evidence-card--selectable' : ''
+      }`}
+    >
+      {hasSelectionAction ? (
+        <button
+          className="evidence-card__select"
+          type="button"
+          aria-pressed={isActive}
+          onClick={() => onSelect(source)}
+        >
+          {content}
+        </button>
+      ) : (
+        <div className="evidence-card__select">{content}</div>
+      )}
 
       <button
         className="evidence-card__toggle"

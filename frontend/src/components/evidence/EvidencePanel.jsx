@@ -2,7 +2,14 @@ import { useEffect, useRef } from 'react'
 import EvidenceCard from './EvidenceCard.jsx'
 import './EvidencePanel.css'
 
-function EvidencePanel({ activeSourceId, focusToken = 0, onClose, onViewMore, sources = [] }) {
+function EvidencePanel({
+  activeSourceId,
+  focusToken = 0,
+  onClose,
+  onSelectSource,
+  onViewMore,
+  sources = [],
+}) {
   const activeCardRef = useRef(null)
 
   useEffect(() => {
@@ -67,6 +74,7 @@ function EvidencePanel({ activeSourceId, focusToken = 0, onClose, onViewMore, so
                 <EvidenceCard
                   source={source}
                   isActive={isActive}
+                  onSelect={onSelectSource}
                   onViewMore={onViewMore}
                 />
               </div>

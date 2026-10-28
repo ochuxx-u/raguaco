@@ -14,7 +14,31 @@
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.2);
 }
 
+.evidence-card--selectable {
+  padding: 0;
+}
+
+.evidence-card--selectable:not(.evidence-card--active):hover {
+  border-color: var(--color-interactive);
+}
+
+.evidence-card__select {
+  display: block;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.evidence-card--selectable .evidence-card__select {
+  padding: 14px 14px 0;
+}
+
+.evidence-card--selectable .evidence-card__toggle {
+  margin: 10px 14px 14px;
+}
+
 .evidence-card__header {
+  display: block;
   color: var(--color-text);
   font-size: var(--font-size-13);
   font-weight: var(--font-weight-semibold);

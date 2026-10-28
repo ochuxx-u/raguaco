@@ -244,6 +244,15 @@ function ChatPage({
     setIsEvidenceOpen(true)
   }
 
+  const handleSelectEvidenceSource = (source) => {
+    if (!source?.id) return
+
+    setActiveEvidence((current) => ({
+      messageId: source.mensajeId ?? current.messageId,
+      sourceId: source.id,
+    }))
+  }
+
   const handleOpenEvidenceFromChat = (source) => {
     if (source?.id) {
       onOpenEvidencePage(source)
@@ -398,6 +407,7 @@ function ChatPage({
           activeSourceId={activeEvidence.sourceId}
           focusToken={evidenceFocusToken}
           onClose={() => setIsEvidenceOpen(false)}
+          onSelectSource={handleSelectEvidenceSource}
           onViewMore={handleOpenEvidenceFromChat}
           sources={evidenceSources}
         />
