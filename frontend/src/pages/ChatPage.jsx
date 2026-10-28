@@ -13,6 +13,7 @@ const INITIAL_EVIDENCE = {
 
 function ChatPage({
   conversationId,
+  currentUser = null,
   onOpenEvidencePage = () => {},
   onSelectedDocumentChange = () => {},
   selectedDocumentId = null,
@@ -45,8 +46,14 @@ function ChatPage({
     setIsDocumentsLoading(true)
     setDocumentsError('')
 
+    if (!currentUser?.id) {
+      setDocuments([])
+      setIsDocumentsLoading(false)
+      return
+    }
+
     try {
-      const nextDocuments = await documentsService.list()
+      const nextDocuments = await documentsService.list(currentUser.id)
 
       if (requestId !== documentsRequestRef.current) return
 
@@ -97,7 +104,7 @@ function ChatPage({
 
   useEffect(() => {
     void loadDocuments()
-  }, [])
+  }, [currentUser?.id])
 
   useEffect(() => {
     void loadConversationMessages()
@@ -121,7 +128,7 @@ function ChatPage({
     const result = []
 
     for (const document of documents) {
-      if (!result.includes(document.categoria)) {
+      if (document.categoria && !result.includes(document.categoria)) {
         result.push(document.categoria)
       }
     }
@@ -260,7 +267,11 @@ function ChatPage({
     setIsAttaching(true)
 
     try {
-      const uploadedDocument = await documentsService.upload(file)
+      const uploadedDocument = await documentsService.upload(
+        file,
+        {},
+        currentUser?.id,
+      )
 
       setAttachment({ name: uploadedDocument.nombre })
       setDocuments((currentDocuments) => {

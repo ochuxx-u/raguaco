@@ -56,10 +56,7 @@ class Documento(ModeloBase):
     categoria: str | None = Field(
         default=None,
         max_length=100,
-        description=(
-            'Categoría temática del documento; por ahora el servidor la rellena '
-            'con el mismo valor que `formato`'
-        ),
+        description='Categoría temática indicada por el usuario; puede quedar vacía',
     )
     estado: EstadoDocumento = Field(
         default=EstadoDocumento.PENDIENTE,
@@ -84,6 +81,14 @@ class Documento(ModeloBase):
         description=(
             'Avance de la ingesta en porcentaje (0-100); llega a 100 cuando el '
             'pipeline termina de procesar los chunks'
+        ),
+    )
+    num_chunks: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            'Fragmentos generados a partir del documento (solo lectura; se '
+            'calcula al consultar)'
         ),
     )
     metadatos: dict[str, Any] = Field(

@@ -229,10 +229,11 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 
 - Título "Gestor de documentos". La franja de pipeline del mockup se conserva en la cabecera.
 - **Zona de carga:** drag & drop "Arrastra tus archivos aquí" + "PDF, DOCX, TXT · asigna una categoría al subir" + botón "Subir documento".
-- **Listado** (filas de datos): cuadro de tipo (PDF/DOC/TXT, 44×44, radio 11px), nombre, categoría · fecha, columna de progreso ("214 chunks", "Indexando 62%", "En cola", "Sin chunks"), badge de estado, y acciones por fila: "Preguntar", "Ver detalle", "Eliminar".
-- **Documentos de referencia del mockup** (semillas de mocks): `manual_politicas.pdf` (Políticas · 12 sep 2026 · Listo), `contrato_proveedor.docx` (Legal · 30 sep 2026 · Procesando 62%), `faq_clientes.txt` (Soporte · 01 oct 2026 · Pendiente), `reporte_q2.pdf` (Finanzas · 28 sep 2026 · Error).
-- "Eliminar" es acción destructiva: usa tonos `--color-danger` y pide confirmación.
-- "Preguntar" navega al Chat. "Ver detalle" abre el panel de detalle del documento (metadatos + acciones).
+- **Listado** (filas de datos): se carga desde `GET /v1/models/documents/?usuario_id=...`. Cuadro de tipo (PDF/DOC/TXT, 44×44, radio 11px), nombre, categoría · fecha, columna de progreso ("214 chunks", "Indexando 62%", "En cola", "Sin chunks"), badge de estado, y acciones por fila: "Preguntar", "Ver detalle", "Eliminar".
+- **Categoría:** es opcional y solo se toma de lo que escriba el usuario; si se deja vacía, el documento queda **sin categoría** (no se usa el formato del archivo). En la fila se muestra solo la fecha cuando no hay categoría; en el detalle, "Sin categoría".
+- **Subida:** `POST /v1/models/documents/upload` (multipart) con el archivo y, opcionalmente, la categoría. El pipeline se ejecuta en la petición: al terminar, el documento aparece con su estado y número de chunks. Formatos: PDF, DOCX, TXT.
+- "Eliminar" es acción destructiva: usa tonos `--color-danger`, pide confirmación y borra el documento, sus chunks y la copia del almacén.
+- "Preguntar" navega al Chat con el documento seleccionado. "Ver detalle" abre el panel de detalle del documento (metadatos + acciones).
 - Estado vacío: "Aún no has cargado documentos."
 
 ### 8.4 Chat RAG (`ChatPage`)
@@ -289,7 +290,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 | :--- | :--- | :--- |
 | `http.js` | Wrapper de `fetch`: base URL (`VITE_API_URL`), JSON, errores normalizados | — |
 | `usersService.js` | Listar y registrar perfiles para la selección de perfil | `GET/POST /v1/models/users/` |
-| `documentsService.js` | Listar, consultar, subir, eliminar documentos; estado de procesamiento | `GET /documents`, `GET /documents/{id}`, `POST /documents`, `DELETE /documents/{id}` |
+| `documentsService.js` | Listar, consultar, subir y eliminar documentos; estado y chunks | `GET /v1/models/documents/?usuario_id=...`, `GET /v1/models/documents/{id}`, `POST /v1/models/documents/upload`, `DELETE /v1/models/documents/{id}` |
 | `queriesService.js` | Preguntas del chat (RAG) | `POST /query` con `{ pregunta, conversacionId? }` → `{ respuesta, fuentes }` |
 | `conversationsService.js` | Conversaciones e historial de mensajes | `GET/POST /conversations`, `GET /conversations/{id}/messages` |
 | `voiceService.js` | Voz (simulada en esta fase) | `POST /voice` (procesarVoz del diagrama) |

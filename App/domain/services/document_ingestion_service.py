@@ -33,9 +33,10 @@ Un fallo en el procesamiento de un documento no tumba la aplicación (RNF6): el
 documento queda en estado `error` con el motivo en `metadatos['error']` y el
 servicio lo devuelve en lugar de relanzar la excepción.
 
-El registro del documento completa además `categoria` (mismo valor que
-`formato`), `num_paginas` (detectado del archivo) y `progreso` (0-100), que
-avanza con el procesamiento de los chunks y llega a 100 al terminar.
+El registro del documento usa la `categoria` indicada por el cliente (queda
+vacía si no se envía), `num_paginas` (detectado del archivo) y `progreso`
+(0-100), que avanza con el procesamiento de los chunks y llega a 100 al
+terminar. `num_chunks` se completa al final con los fragmentos guardados.
 """
 
 import os
@@ -85,6 +86,8 @@ class DocumentIngestionService:
         archivo: str | Path | BinaryIO,
         *,
         usuario_id: UUID,
+        categoria: str | None = None,
+        nombre_archivo: str | None = None,
         metadatos: dict[str, Any] | None = None,
     ) -> Documento:
         """Procesa un archivo con el pipeline ETL completo y devuelve su `Documento`.
@@ -95,9 +98,10 @@ class DocumentIngestionService:
         documento (clave ajena inexistente, validación) sí se propagan para que
         la API los traduzca a 404/422; los del procesamiento no.
 
-        El registro rellena `categoria` con el mismo valor que `formato`, guarda
-        en `num_paginas` las páginas detectadas del archivo y hace avanzar
-        `progreso` (0-100) durante el pipeline hasta 100 al terminar.
+        El registro guarda la `categoria` recibida (vacía si no se envía), las
+        páginas detectadas en `num_paginas` y hace avanzar `progreso` (0-100)
+        durante el pipeline hasta 100 al terminar. `nombre_archivo` permite
+        conservar el nombre original cuando `archivo` es un flujo binario.
 
         Pasos, según el diagrama de secuencia: `guardarOriginal(archivo)` →
         `extraerTexto` (sobre la copia guardada) → `limpiar` → `fragmentar` →
@@ -105,7 +109,7 @@ class DocumentIngestionService:
         listo.
         """
         # guardarOriginal(archivo) → rutaOriginal
-        ruta_original = self._storage.guardar_original(archivo)
+        ruta_original = self._storage.guardar_original(archivo, nombre=nombre_archivo)
 
         # Desviación (a): el documento se registra al inicio, en estado
         # `pendiente`, para poder observar sus estados durante el pipeline.
@@ -114,10 +118,9 @@ class DocumentIngestionService:
             documento = Documento(
                 usuario_id=usuario_id,
                 ruta_original=ruta_original,
+                categoria=categoria,
                 metadatos={**(metadatos or {}), 'tamano_bytes': os.path.getsize(ruta_original)},
             )
-            # `categoria` es el mismo dato que `formato`.
-            documento.categoria = documento.formato
             documento = await self._documento_repo.create(documento)
         except Exception:
             # El registro no llegó a completarse (usuario inexistente,
@@ -169,6 +172,7 @@ class DocumentIngestionService:
             documento.marcar_listo()
             documento.progreso = 100
             documento = await self._documento_repo.update(documento)
+            documento.num_chunks = len(chunks)
             return documento
         except Exception as exc:
             # RNF6: el fallo de un documento no tumba la app; el motivo queda en

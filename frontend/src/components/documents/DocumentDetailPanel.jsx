@@ -92,7 +92,7 @@ function DocumentDetailPanel({ document, error, onAsk, onClose }) {
           </div>
           <div className="document-detail__metadata-row">
             <dt>Categoría</dt>
-            <dd>{document.categoria}</dd>
+            <dd>{document.categoria || 'Sin categoría'}</dd>
           </div>
           <div className="document-detail__metadata-row">
             <dt>Fecha</dt>

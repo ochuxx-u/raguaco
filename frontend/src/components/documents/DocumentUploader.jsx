@@ -87,6 +87,7 @@ function DocumentUploader({ isUploading = false, onUpload }) {
             type="text"
             value={category}
             placeholder="Ej. Políticas"
+            maxLength={100}
             disabled={isUploading}
             onChange={(event) => setCategory(event.target.value)}
           />

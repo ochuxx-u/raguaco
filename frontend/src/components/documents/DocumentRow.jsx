@@ -14,7 +14,7 @@ function DocumentRow({ document, isHighlighted = false, onAsk, onViewDetail, onD
           {document.nombre}
         </p>
         <p className="document-row__meta">
-          {document.categoria} · {document.fecha}
+          {document.categoria ? `${document.categoria} · ${document.fecha}` : document.fecha}
         </p>
       </div>
 

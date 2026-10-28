@@ -3,13 +3,16 @@ import DocumentDetailPanel from '../components/documents/DocumentDetailPanel.jsx
 import DocumentList from '../components/documents/DocumentList.jsx'
 import DocumentUploader from '../components/documents/DocumentUploader.jsx'
 import documentsService from '../services/documentsService.js'
-import queriesService from '../services/queriesService.js'
 import { DOCUMENT_STATES } from '../utils/documents.js'
 import './DocumentsPage.css'
 
 const PIPELINE_STEPS = ['Upload', 'Process', 'Vectorize', 'Retrieve', 'Respond']
 
-function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
+function DocumentsPage({
+  currentUser = null,
+  onNavigate = () => {},
+  selectedDocumentId = null,
+}) {
   const [documents, setDocuments] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -17,40 +20,64 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [isUploading, setIsUploading] = useState(false)
-  const [simulatedIds, setSimulatedIds] = useState(() => new Set())
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [detailError, setDetailError] = useState('')
   const [documentToDelete, setDocumentToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const documentsRequestRef = useRef(0)
   const detailRequestRef = useRef(0)
   const autoOpenedDocumentRef = useRef(null)
 
   const loadDocuments = async () => {
+    const usuarioId = currentUser?.id
+
+    if (!usuarioId) {
+      documentsRequestRef.current += 1
+      setDocuments([])
+      setLoadError('')
+      setIsLoading(false)
+      return []
+    }
+
+    const requestId = ++documentsRequestRef.current
     setIsLoading(true)
     setLoadError('')
 
     try {
-      const data = await documentsService.list()
+      const data = await documentsService.list(usuarioId)
+
+      if (requestId !== documentsRequestRef.current) {
+        return []
+      }
+
       setDocuments(data)
       return data
     } catch {
-      setLoadError('No se pudieron cargar los documentos.')
+      if (requestId === documentsRequestRef.current) {
+        setLoadError('No se pudieron cargar los documentos.')
+      }
       return []
     } finally {
-      setIsLoading(false)
+      if (requestId === documentsRequestRef.current) {
+        setIsLoading(false)
+      }
     }
   }
 
   useEffect(() => {
     void loadDocuments()
-  }, [])
+
+    return () => {
+      documentsRequestRef.current += 1
+    }
+  }, [currentUser?.id])
 
   const categoryOptions = useMemo(() => {
     const categories = []
 
     for (const document of documents) {
-      if (!categories.includes(document.categoria)) {
+      if (document.categoria && !categories.includes(document.categoria)) {
         categories.push(document.categoria)
       }
     }
@@ -78,49 +105,18 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
     })
   }, [documents, searchTerm, statusFilter, categoryFilter])
 
-  const hasSimulatedProcessing = useMemo(
-    () =>
-      documents.some(
-        (document) =>
-          simulatedIds.has(document.id) &&
-          (document.estado === 'pendiente' || document.estado === 'procesando'),
-      ),
-    [documents, simulatedIds],
-  )
-
-  useEffect(() => {
-    if (!hasSimulatedProcessing) {
-      return undefined
-    }
-
-    let cancelled = false
-
-    const pollDocuments = async () => {
-      try {
-        const latestDocuments = await documentsService.list()
-
-        if (!cancelled) {
-          setDocuments(latestDocuments)
-        }
-      } catch {
-        // La lista conserva el último estado conocido si falla una actualización.
-      }
-    }
-
-    const intervalId = setInterval(pollDocuments, 1200)
-
-    return () => {
-      cancelled = true
-      clearInterval(intervalId)
-    }
-  }, [hasSimulatedProcessing])
-
   const handleUpload = async (files, metadata) => {
+    const usuarioId = currentUser?.id
+
+    if (!usuarioId) {
+      throw new Error('No hay un perfil activo.')
+    }
+
     setIsUploading(true)
 
     try {
       const results = await Promise.allSettled(
-        files.map((file) => documentsService.upload(file, metadata)),
+        files.map((file) => documentsService.upload(file, metadata, usuarioId)),
       )
       const createdDocuments = results
         .filter((result) => result.status === 'fulfilled')
@@ -128,11 +124,6 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
 
       if (createdDocuments.length > 0) {
         setDocuments((currentDocuments) => [...createdDocuments, ...currentDocuments])
-        setSimulatedIds((currentIds) => {
-          const nextIds = new Set(currentIds)
-          createdDocuments.forEach((document) => nextIds.add(document.id))
-          return nextIds
-        })
       }
 
       if (results.some((result) => result.status === 'rejected')) {
@@ -186,13 +177,8 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
     void handleViewDetail(matchedDocument)
   }, [documents, selectedDocumentId])
 
-  const startConversationForDocument = async (document) => {
-    const conversation = await queriesService.createConversation(document.id)
-    onNavigate('chat', conversation.id, document.id)
-  }
-
   const handleAsk = (document) => {
-    void startConversationForDocument(document)
+    onNavigate('chat', null, document.id)
   }
 
   const handleRequestDelete = (document) => {
@@ -218,11 +204,6 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
       setDocuments((currentDocuments) =>
         currentDocuments.filter((document) => document.id !== deletedId),
       )
-      setSimulatedIds((currentIds) => {
-        const nextIds = new Set(currentIds)
-        nextIds.delete(deletedId)
-        return nextIds
-      })
 
       if (selectedDocument?.id === deletedId) {
         closeDetail()
@@ -367,7 +348,7 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
           error={detailError}
           onAsk={(document) => {
             closeDetail()
-            void startConversationForDocument(document)
+            handleAsk(document)
           }}
           onClose={closeDetail}
         />
@@ -393,8 +374,8 @@ function DocumentsPage({ onNavigate = () => {}, selectedDocumentId = null }) {
               Eliminar documento
             </h2>
             <p className="documents-page__dialog-text">
-              ¿Seguro que quieres eliminar “{documentToDelete.nombre}”? Esta acción
-              solo afecta a la lista actual.
+              ¿Seguro que quieres eliminar “{documentToDelete.nombre}”? Se eliminarán
+              también sus chunks y la copia guardada.
             </p>
 
             {deleteError && (

@@ -110,6 +110,7 @@ function App() {
       case 'documents':
         return (
           <DocumentsPage
+            currentUser={currentUser}
             onNavigate={handleNavigate}
             selectedDocumentId={selectedDocumentId}
           />
@@ -118,6 +119,7 @@ function App() {
         return (
           <ChatPage
             conversationId={selectedConversationId}
+            currentUser={currentUser}
             onOpenEvidencePage={handleOpenEvidence}
             onSelectedDocumentChange={handleSelectedDocumentChange}
             selectedDocumentId={selectedDocumentId}

@@ -12,6 +12,13 @@ _COLUMNS = (
     'fecha_carga, num_paginas, progreso, metadata'
 )
 
+# `num_chunks` es un dato derivado (no vive en `documento`): se calcula al leer
+# para que la UI pueda mostrar "N chunks" sin una consulta adicional.
+_SELECT_COLUMNS = (
+    f'{_COLUMNS}, '
+    '(select count(*) from chunk c where c.documento_id = documento.id) as num_chunks'
+)
+
 
 class DocumentoRepository:
     """Acceso a la tabla `documento` (RF1, RF6)."""
@@ -22,12 +29,12 @@ class DocumentoRepository:
     async def list(self, usuario_id: UUID | None = None) -> list[Documento]:
         if usuario_id is None:
             cursor = await self._conn.execute(
-                f'select {_COLUMNS} from documento order by fecha_carga desc'
+                f'select {_SELECT_COLUMNS} from documento order by fecha_carga desc'
             )
         else:
             cursor = await self._conn.execute(
                 f"""
-                select {_COLUMNS}
+                select {_SELECT_COLUMNS}
                 from documento
                 where usuario_id = %s
                 order by fecha_carga desc
@@ -38,7 +45,7 @@ class DocumentoRepository:
 
     async def get(self, documento_id: UUID) -> Documento | None:
         cursor = await self._conn.execute(
-            f'select {_COLUMNS} from documento where id = %s',
+            f'select {_SELECT_COLUMNS} from documento where id = %s',
             (documento_id,),
         )
         row = await cursor.fetchone()

@@ -79,7 +79,9 @@ function ChatDocumentsPanel({
                         <span className="chat-documents__name" title={document.nombre}>
                           {document.nombre}
                         </span>
-                        <span className="chat-documents__meta">{document.categoria}</span>
+                        <span className="chat-documents__meta">
+                          {document.categoria || 'Sin categoría'}
+                        </span>
                       </button>
                     </li>
                   )
