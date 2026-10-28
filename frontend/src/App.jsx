@@ -104,7 +104,9 @@ function App() {
   const renderActivePage = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardPage onNavigate={handleNavigate} />
+        return (
+          <DashboardPage currentUser={currentUser} onNavigate={handleNavigate} />
+        )
       case 'documents':
         return (
           <DocumentsPage
@@ -134,7 +136,9 @@ function App() {
           />
         )
       default:
-        return <DashboardPage onNavigate={handleNavigate} />
+        return (
+          <DashboardPage currentUser={currentUser} onNavigate={handleNavigate} />
+        )
     }
   }
 

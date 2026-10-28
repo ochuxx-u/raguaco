@@ -1,37 +1,90 @@
+import { useEffect, useRef, useState } from 'react'
 import RecentActivity from '../components/dashboard/RecentActivity.jsx'
 import StatCard from '../components/dashboard/StatCard.jsx'
+import dashboardService from '../services/dashboardService.js'
 import './DashboardPage.css'
 
-// Sin mocks: la base de conocimiento arranca vacía. Cuando exista la API, estas
-// cifras deben calcularse con documentsService y conversationsService.
-const stats = [
-  {
-    id: 'documents',
-    label: 'Documentos cargados',
-    value: '0',
-  },
-  {
-    id: 'conversations',
-    label: 'Conversaciones',
-    value: '0',
-  },
-  {
-    id: 'chunks',
-    label: 'Chunks generados',
-    value: '0',
-    tone: 'accent',
-  },
-  {
-    id: 'system-status',
-    label: 'Estado del sistema',
-    value: 'Operativo',
-    tone: 'interactive',
-  },
-]
+function DashboardPage({ currentUser = null, onNavigate = () => {} }) {
+  const [summary, setSummary] = useState(null)
+  const [isLoading, setIsLoading] = useState(Boolean(currentUser?.id))
+  const [error, setError] = useState('')
+  const requestRef = useRef(0)
 
-const recentActivity = []
+  const loadSummary = async () => {
+    const usuarioId = currentUser?.id
 
-function DashboardPage({ onNavigate = () => {} }) {
+    // Sin perfil no se consulta el backend: la base se muestra vacía.
+    if (!usuarioId) {
+      requestRef.current += 1
+      setSummary(null)
+      setError('')
+      setIsLoading(false)
+      return
+    }
+
+    const requestId = ++requestRef.current
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const data = await dashboardService.getSummary(usuarioId)
+
+      if (requestId !== requestRef.current) {
+        return
+      }
+
+      setSummary(data)
+    } catch {
+      if (requestId === requestRef.current) {
+        setSummary(null)
+        setError('No se pudo cargar la actividad reciente.')
+      }
+    } finally {
+      if (requestId === requestRef.current) {
+        setIsLoading(false)
+      }
+    }
+  }
+
+  useEffect(() => {
+    void loadSummary()
+
+    return () => {
+      // Invalida la petición en curso al desmontar o al cambiar de usuario:
+      // una respuesta vieja no debe pisar el estado actual.
+      requestRef.current += 1
+    }
+  }, [currentUser?.id])
+
+  const hasError = !isLoading && Boolean(error)
+  const placeholder = isLoading ? '…' : hasError ? '—' : null
+  const statValue = (key) => placeholder ?? summary?.stats[key] ?? '0'
+
+  const stats = [
+    {
+      id: 'documents',
+      label: 'Documentos cargados',
+      value: statValue('documents'),
+    },
+    {
+      id: 'conversations',
+      label: 'Conversaciones',
+      value: statValue('conversations'),
+    },
+    {
+      id: 'chunks',
+      label: 'Chunks generados',
+      value: statValue('chunks'),
+      tone: 'accent',
+    },
+    {
+      id: 'system-status',
+      label: 'Estado del sistema',
+      value: 'Operativo',
+      tone: 'interactive',
+    },
+  ]
+
   return (
     <section className="dashboard" aria-labelledby="dashboard-title">
       <header className="dashboard__header">
@@ -64,7 +117,12 @@ function DashboardPage({ onNavigate = () => {} }) {
         ))}
       </section>
 
-      <RecentActivity items={recentActivity} />
+      <RecentActivity
+        error={error}
+        isLoading={isLoading}
+        items={summary?.recentActivity ?? []}
+        onRetry={loadSummary}
+      />
     </section>
   )
 }

@@ -17,6 +17,7 @@ from domain.services.document_ingestion_service import DocumentIngestionService
 from domain.services.rag_service import RAGService
 from domain.services.voice_service import VoiceService
 from infrastructure.db.repositories.conversacion_repository import ConversacionRepository
+from infrastructure.db.repositories.dashboard_repository import DashboardRepository
 from infrastructure.db.repositories.documento_repository import DocumentoRepository
 from infrastructure.db.repositories.mensaje_repository import MensajeRepository
 from infrastructure.db.repositories.referencia_fuente_repository import ReferenciaFuenteRepository
@@ -51,6 +52,10 @@ def get_documento_repository(conn: DbConnection) -> DocumentoRepository:
     return DocumentoRepository(conn)
 
 
+def get_dashboard_repository(conn: DbConnection) -> DashboardRepository:
+    return DashboardRepository(conn)
+
+
 def get_conversacion_repository(conn: DbConnection) -> ConversacionRepository:
     return ConversacionRepository(conn)
 
@@ -65,6 +70,9 @@ def get_referencia_fuente_repository(conn: DbConnection) -> ReferenciaFuenteRepo
 
 UsuarioRepositoryDep = Annotated[UsuarioRepository, Depends(get_usuario_repository)]
 DocumentoRepositoryDep = Annotated[DocumentoRepository, Depends(get_documento_repository)]
+DashboardRepositoryDep = Annotated[
+    DashboardRepository, Depends(get_dashboard_repository)
+]
 ConversacionRepositoryDep = Annotated[
     ConversacionRepository, Depends(get_conversacion_repository)
 ]

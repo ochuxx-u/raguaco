@@ -10,6 +10,7 @@ from api.deps import (
     get_voice_service,
 )
 from api.routes.conversations import router as conversations_router
+from api.routes.dashboard import router as dashboard_router
 from api.routes.documents import router as documents_router
 from api.routes.queries import router as queries_router
 from api.routes.users import router as users_router
@@ -53,6 +54,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(conversations_router)
+app.include_router(dashboard_router)
 app.include_router(documents_router)
 app.include_router(queries_router)
 app.include_router(users_router)

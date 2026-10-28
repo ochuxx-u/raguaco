@@ -221,8 +221,8 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 
 - **Sin bloque "Pipeline RAG"** (eliminado por modificación explícita).
 - Cabecera: "Bienvenido de nuevo" + "Tu base de conocimiento está lista para responder." + botón "+ Subir nuevo documento".
-- **Tarjetas de estadísticas:** "Documentos cargados" · "Conversaciones" · "Chunks generados" · "Estado del sistema" ("Operativo"). Mientras no haya datos, las cifras muestran `0`.
-- **"Actividad reciente"**: lista de eventos; sin datos muestra "Aún no hay actividad reciente."
+- **Tarjetas de estadísticas:** se calculan con `GET /v1/dashboard/?usuario_id=...` (documentos, conversaciones y chunks del usuario). Sin datos muestran `0`; "Estado del sistema" sigue siendo "Operativo".
+- **"Actividad reciente"**: hasta 3 documentos y 3 conversaciones recientes mezclados por fecha, con mensajes como "documento — vectorización completada" o "Conversación “X” — N mensajes". Sin datos muestra "Aún no hay actividad reciente."
 - Acción "+ Subir nuevo documento" → vista Documentos (flujo de carga).
 
 ### 8.3 Documentos (`DocumentsPage`)
@@ -293,7 +293,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 | `queriesService.js` | Preguntas del chat (RAG) | `POST /query` con `{ pregunta, conversacionId? }` → `{ respuesta, fuentes }` |
 | `conversationsService.js` | Conversaciones e historial de mensajes | `GET/POST /conversations`, `GET /conversations/{id}/messages` |
 | `voiceService.js` | Voz (simulada en esta fase) | `POST /voice` (procesarVoz del diagrama) |
-| `dashboardService.js` | Resumen del Dashboard | Compone con documentos + conversaciones; endpoint agregado solo si el backend lo ofrece |
+| `dashboardService.js` | Resumen del Dashboard (totales + actividad reciente) | `GET /v1/dashboard/?usuario_id=...` |
 
 - `src/config.js` expone `API_BASE_URL` desde `VITE_API_URL`; en desarrollo se deja vacía y Vite proxya `/v1` a `http://127.0.0.1:8000`. Cambiar de API = cambiar la implementación interna de cada servicio, **sin tocar componentes**.
 
