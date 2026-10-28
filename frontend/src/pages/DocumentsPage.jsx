@@ -6,8 +6,6 @@ import documentsService from '../services/documentsService.js'
 import { DOCUMENT_STATES } from '../utils/documents.js'
 import './DocumentsPage.css'
 
-const PIPELINE_STEPS = ['Upload', 'Process', 'Vectorize', 'Retrieve', 'Respond']
-
 function DocumentsPage({
   currentUser = null,
   onNavigate = () => {},
@@ -254,25 +252,6 @@ function DocumentsPage({
             detalle de cada archivo.
           </p>
         </div>
-
-        <ol className="documents-page__pipeline" aria-label="Flujo de procesamiento de documentos">
-          {PIPELINE_STEPS.map((step, index) => (
-            <li className="documents-page__pipeline-item" key={step}>
-              <span
-                className={`documents-page__pipeline-step${
-                  step === 'Retrieve' ? ' documents-page__pipeline-step--active' : ''
-                }`}
-              >
-                {step}
-              </span>
-              {index < PIPELINE_STEPS.length - 1 && (
-                <span className="documents-page__pipeline-arrow" aria-hidden="true">
-                  →
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
       </header>
 
       <DocumentUploader isUploading={isUploading} onUpload={handleUpload} />
