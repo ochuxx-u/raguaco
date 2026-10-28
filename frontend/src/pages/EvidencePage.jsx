@@ -48,17 +48,17 @@ function EvidencePage({
               <button
                 className="evidence-page__button evidence-page__button--primary"
                 type="button"
-                disabled={!selectedEvidence.documentId}
-                onClick={() => onOpenDocument(selectedEvidence.documentId)}
+                onClick={() => onBackToChat(selectedEvidence.conversationId ?? null)}
               >
-                Ver documento
+                Volver al chat
               </button>
               <button
                 className="evidence-page__button evidence-page__button--secondary"
                 type="button"
-                onClick={() => onBackToChat(selectedEvidence.conversationId ?? null)}
+                disabled={!selectedEvidence.documentId}
+                onClick={() => onOpenDocument(selectedEvidence.documentId)}
               >
-                Volver al chat
+                Ver documento
               </button>
             </div>
           </div>
