@@ -137,8 +137,8 @@ Píldora (`border-radius: 99px`, borde 1px, fondo transparente, `font-size: 12px
 | :--- | :--- | :--- |
 | Pendiente | `#CBD5E1` | "En cola" |
 | Procesando | `#3B82F6` | "Indexando N%" |
-| Listo | `#22D3EE` | "N chunks" |
-| Error | `#FB923C` | "Sin chunks" |
+| Listo | `#22D3EE` | "N páginas" |
+| Error | `#FB923C` | "N páginas"; "— páginas" si no se detectaron |
 
 ### 5.5 Reglas generales de UI
 
@@ -228,9 +228,9 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 
 - Título "Gestor de documentos". La franja de pipeline del mockup se conserva en la cabecera.
 - **Zona de carga:** drag & drop "Arrastra tus archivos aquí" + "PDF, DOCX, TXT · asigna una categoría al subir" + botón "Subir documento".
-- **Listado** (filas de datos): se carga desde `GET /v1/models/documents/?usuario_id=...`. Cuadro de tipo (PDF/DOC/TXT, 44×44, radio 11px), nombre, categoría · fecha, columna de progreso ("214 chunks", "Indexando 62%", "En cola", "Sin chunks"), badge de estado, y acciones por fila: "Preguntar", "Ver detalle", "Eliminar".
+- **Listado** (filas de datos): se carga desde `GET /v1/models/documents/?usuario_id=...`. Cuadro de tipo (PDF/DOC/TXT, 44×44, radio 11px), nombre, categoría · fecha, columna de progreso ("48 páginas", "Indexando 62%", "En cola"), badge de estado, y acciones por fila: "Preguntar", "Ver detalle", "Eliminar".
 - **Categoría:** es opcional y solo se toma de lo que escriba el usuario; si se deja vacía, el documento queda **sin categoría** (no se usa el formato del archivo). En la fila se muestra solo la fecha cuando no hay categoría; en el detalle, "Sin categoría".
-- **Subida:** `POST /v1/models/documents/upload` (multipart) con el archivo y, opcionalmente, la categoría. El pipeline se ejecuta en la petición: al terminar, el documento aparece con su estado y número de chunks. Formatos: PDF, DOCX, TXT.
+- **Subida:** `POST /v1/models/documents/upload` (multipart) con el archivo y, opcionalmente, la categoría. El pipeline se ejecuta en la petición: al terminar, el documento aparece con su estado y número de páginas. Formatos: PDF, DOCX, TXT.
 - "Eliminar" es acción destructiva: usa tonos `--color-danger`, pide confirmación y borra el documento, sus chunks y la copia del almacén.
 - "Preguntar" navega al Chat con el documento seleccionado. "Ver detalle" abre el panel de detalle del documento (metadatos + acciones).
 - Estado vacío: "Aún no has cargado documentos."
@@ -269,7 +269,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 ### 8.7 Evidencia (`EvidencePage`)
 
 - **Pantalla independiente** (nombre final `EvidencePage`; no `SourcesPage`).
-- **Tarjeta de documento:** cuadro PDF, "manual_politicas.pdf", migas de contexto "Políticas · Sección 4.2 · Página 12 · Chunk #87". **Sin bloque de similitud** (el mockup muestra "0.94 / Similitud": no se implementa, ver 9.6).
+- **Tarjeta de documento:** cuadro PDF, "manual_politicas.pdf", migas de contexto "Políticas · Sección 4.2 · Página 12". **Sin bloque de similitud** (el mockup muestra "0.94 / Similitud": no se implementa, ver 9.6).
 - **Fragmento:** cita textual con el fragmento relevante resaltado (cian/`--color-accent`).
 - **Acciones:** "Abrir documento" (navega a Documentos con el detalle abierto) y "Volver al chat" (navega a Chat).
 - El fragmento respeta la regla de scroll interno de 6.3.
@@ -304,7 +304,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 
 ### 9.4 Estados de documento (contrato UI ↔ backend)
 
-Los labels y colores de UI (5.4) mapean al enum del diagrama de clases: `pendiente → "Pendiente"`, `procesando → "Procesando"`, `listo → "Listo"`, `error → "Error"`. El progreso (`Indexando N%`, `En cola`, `N chunks`, `Sin chunks`) es texto secundario del estado.
+Los labels y colores de UI (5.4) mapean al enum del diagrama de clases: `pendiente → "Pendiente"`, `procesando → "Procesando"`, `listo → "Listo"`, `error → "Error"`. El progreso (`Indexando N%`, `En cola`, `N páginas`) es texto secundario del estado; el conteo de páginas (`num_paginas` del backend) también se usa en el detalle del documento con la métrica "Páginas".
 
 ### 9.5 Datos pendientes de contrato (backend)
 
