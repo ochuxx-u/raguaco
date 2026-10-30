@@ -32,8 +32,10 @@
 }
 
 .voice-page--idle .voice-page__main,
-.voice-page--listening .voice-page__main,
-.voice-page--processing .voice-page__main {
+.voice-page--recording .voice-page__main,
+.voice-page--processing .voice-page__main,
+.voice-page--transcribing .voice-page__main,
+.voice-page--answering .voice-page__main {
   justify-content: center;
 }
 
@@ -237,6 +239,10 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
+.voice-page__card:only-child {
+  grid-column: 1 / -1;
+}
+
 .voice-page__card--transcription {
   color: var(--color-bg);
   background-color: var(--color-text-muted);
@@ -278,10 +284,14 @@
   color: var(--color-text-muted);
 }
 
-.voice-page__evidence {
+.voice-page__evidence,
+.voice-page__notice {
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
+}
+
+.voice-page__evidence {
   overflow: hidden;
   background-color: var(--color-bg);
   border: 1px solid var(--color-border);

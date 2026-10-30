@@ -38,7 +38,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import numpy as np
@@ -216,17 +216,21 @@ class VoiceService:
         audio: bytes | np.ndarray,
         usuario_id: UUID,
         conversacion_id: UUID | None = None,
+        *,
+        opciones: dict[str, Any] | None = None,
     ) -> RespuestaVoz:
         """Secuencia completa para una pregunta hablada: STT → RAG.
 
         El TTS se genera después con `preparar` + `sintetizar` para poder
-        entregar el audio por fragmentos (RF12).
+        entregar el audio por fragmentos (RF12). `opciones` se reenvía al RAG
+        (por ejemplo, los filtros de documentos del panel de Voz).
         """
         transcripcion = await self.transcribir_audio(audio)
         return await self.procesar_texto(
             transcripcion,
             usuario_id,
             conversacion_id=conversacion_id,
+            opciones=opciones,
         )
 
     async def procesar_texto(
@@ -234,12 +238,15 @@ class VoiceService:
         texto: str,
         usuario_id: UUID,
         conversacion_id: UUID | None = None,
+        *,
+        opciones: dict[str, Any] | None = None,
     ) -> RespuestaVoz:
         """Responde una consulta de voz ya transcrita (o escrita).
 
         Si no llega `conversacion_id`, abre una conversación nueva con las
         primeras palabras de la consulta como título. Si llega, comprueba que
-        exista y sea del usuario antes de invocar al RAG (RF6).
+        exista y sea del usuario antes de invocar al RAG (RF6). `opciones`
+        mantiene el mismo contrato que `RAGService.responder` (filtros incluidos).
         """
         if self._rag is None or self._conversations is None:
             raise VozError(
@@ -270,6 +277,7 @@ class VoiceService:
             consulta,
             conversacion_id,
             usuario_id=usuario_id,
+            opciones=opciones,
         )
         return RespuestaVoz(
             transcripcion=consulta,

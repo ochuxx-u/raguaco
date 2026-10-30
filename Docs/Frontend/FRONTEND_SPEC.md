@@ -17,7 +17,7 @@ Definir las reglas de diseño, estructura, navegación, datos y componentes del 
 - Reglas por pantalla: Landing, Dashboard, Documentos, Chat RAG, Historial, Voz y Evidencia.
 - Estrategia de datos con mocks y capa de servicios para la futura API FastAPI.
 
-**Fuera de alcance (por ahora):** backend, base de datos, autenticación real, captura de voz real, y cualquier tecnología no listada en la sección 3.
+**Fuera de alcance (por ahora):** backend, base de datos, autenticación real, streaming continuo de voz, y cualquier tecnología no listada en la sección 3.
 
 ---
 
@@ -259,12 +259,12 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 
 ### 8.6 Voz (`VoicePage`)
 
-- **Flujo simulado con mocks en esta fase** (decisión): sin captura real de micrófono y **sin Web Speech API**.
+- **Flujo real con `MediaRecorder`**: captura con `getUserMedia`, envío a `POST /v1/voice/consultar` y reproducción de los WAV del TTS. Sin Web Speech API.
 - Elementos (mockup): texto "Estoy escuchando…", waveform de barras cian (puede ser estática o con animación CSS simple), controles **Micrófono** (iniciar) y **Detener**, orientados a icono con `aria-label` (modificación de controles por iconos). Aplican la **transición visual** de los controles de voz y envío: en su estado compacto priorizan el icono.
 - Paneles inferiores: "Transcripción" ("¿Cuántos días de vacaciones tengo?") y "Respuesta" ("Corresponden 15 días hábiles, según la página 12.").
 - **Transcripción:** el texto de la transcripción se muestra en **gris oscuro** (modificación visual que prevalece sobre el mockup), garantizando contraste adecuado con su fondo.
 - **Fuentes/evidencia:** la Voz también muestra el panel de evidencia (decisión: panel dentro de Chat y Voz), reutilizando los componentes de la familia `Evidence*`.
-- Estados del flujo simulado: inactivo → "escuchando" → "procesando" → resultado (transcripción + respuesta + evidencia), con latencias simuladas desde mocks.
+- Estados del flujo: inactivo → "grabando" → "procesando" → transcripción → respuesta → reproducción → resultado (transcripción + respuesta + evidencia).
 
 ### 8.7 Evidencia (`EvidencePage`)
 
@@ -293,7 +293,7 @@ Diseño responsive obligatorio (modificaciones). Comportamiento derivado de esa 
 | `documentsService.js` | Listar, consultar, subir y eliminar documentos; estado y chunks | `GET /v1/models/documents/?usuario_id=...`, `GET /v1/models/documents/{id}`, `POST /v1/models/documents/upload`, `DELETE /v1/models/documents/{id}` |
 | `queriesService.js` | Preguntas del chat (RAG) | `POST /query` con `{ pregunta, conversacionId? }` → `{ respuesta, fuentes }` |
 | `conversationsService.js` | Conversaciones e historial de mensajes | `GET/POST /conversations`, `GET /conversations/{id}/messages` |
-| `voiceService.js` | Voz (simulada en esta fase) | `POST /voice` (procesarVoz del diagrama) |
+| `voiceService.js` | Voz real: STT + RAG + TTS por NDJSON | `POST /v1/voice/consultar` (multipart) y `POST /v1/voice/tts` |
 | `dashboardService.js` | Resumen del Dashboard (totales + actividad reciente) | `GET /v1/dashboard/?usuario_id=...` |
 
 - `src/config.js` expone `API_BASE_URL` desde `VITE_API_URL`; en desarrollo se deja vacía y Vite proxya `/v1` a `http://127.0.0.1:8000`. Cambiar de API = cambiar la implementación interna de cada servicio, **sin tocar componentes**.
@@ -327,7 +327,7 @@ Formas exactas de request/response (campos, paginación, filtros) quedan pendien
 | `chat/` | ChatWindow, MessageList, MessageBubble, ChatInput, SourceChip, NoEvidenceNotice |
 | `evidence/` | EvidencePanel (dentro de Chat/Voz), EvidenceCard, EvidenceViewer |
 | `history/` | ConversationList, ConversationItem |
-| `voice/` | VoiceRecorder (simulado), RecordingIndicator, TranscriptView, AudioPlayer (placeholder) |
+| `voice/` | VoiceRecorder, RecordingIndicator, TranscriptView, AudioPlayer |
 | `dashboard/` | StatCard, RecentActivity |
 | `layout/` | AppLayout, Sidebar, FloatingUserButton |
 
@@ -352,7 +352,7 @@ Reglas: nombres en inglés; un componente = una carpeta/par de archivos (`Compon
 | Score de similitud/relevancia | **Pendiente del backend**; la UI no lo muestra (9.6) |
 | Formas exactas de request/response | Pendientes del backend (9.5) |
 | Autenticación real | Fuera de alcance (RNF8 la prevé como extensión futura) |
-| Captura de voz real / Web Speech API / streaming | Fuera de alcance en esta fase (Voz simulada) |
+| Captura de voz real | Implementada con `MediaRecorder`; el streaming continuo por WebSocket/WebRTC queda fuera de alcance |
 | React Router | No por ahora; migrable cuando hagan falta URLs compartibles |
 | Librerías de iconos, componentes o estado global | No por ahora (iconos SVG locales) |
 | Parámetros de recuperación (Top-K, umbral, filtros) | No aparecen en el mockup; fuera de la primera versión |

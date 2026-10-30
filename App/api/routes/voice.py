@@ -33,7 +33,12 @@ from fastapi.responses import FileResponse, StreamingResponse
 from psycopg.errors import ForeignKeyViolation
 from pydantic import Field
 
-from api.deps import VoiceFlowServiceDep, VoiceServiceDep
+from api.deps import (
+    DocumentoRepositoryDep,
+    VoiceFlowServiceDep,
+    VoiceServiceDep,
+)
+from api.routes.queries import FiltrosBusqueda, _validar_documentos_filtrados
 from domain.models.base import ModeloBase
 from domain.services.voice_service import (
     ConversacionAjena,
@@ -230,16 +235,18 @@ async def text_to_speech(
         'completo y responde NDJSON con los eventos: `procesando`, '
         '`transcripcion`, `respuesta`, `inicio`, `fragmento`, `fin`. Si no hay '
         'evidencia documental, la respuesta es el rechazo explícito de RF9 y '
-        '`referencias` viene vacío. Para preguntas escritas usa '
-        '`POST /v1/queries/`.'
+        '`referencias` viene vacío. `documento_ids` restringe la recuperación '
+        'a esos documentos, igual que `filtros.documento_ids` en '
+        '`POST /v1/queries/`; si se omite, se busca en todos los documentos del '
+        'usuario. Para preguntas escritas usa `POST /v1/queries/`.'
     ),
     responses={
         200: {
             'description': 'Stream NDJSON con la transcripción, la respuesta y sus WAV',
             'content': {'application/x-ndjson': {}},
         },
-        403: {'description': 'La conversación pertenece a otro usuario'},
-        404: {'description': 'No existe la conversación indicada'},
+        403: {'description': 'La conversación o algún documento no pertenecen al usuario'},
+        404: {'description': 'No existe la conversación o algún documento indicado'},
         413: {'description': 'El audio supera el tamaño máximo'},
         422: {'description': 'Audio vacío o pregunta sin texto reconocible'},
         503: {'description': 'STT, TTS o modelos locales no disponibles'},
@@ -248,6 +255,7 @@ async def text_to_speech(
 async def consultar_voz(
     request: Request,
     voz: VoiceFlowServiceDep,
+    documentos: DocumentoRepositoryDep,
     audio: Annotated[
         UploadFile,
         File(description='Audio de la pregunta (WAV, OGG, WebM, MP3…)'),
@@ -256,6 +264,15 @@ async def consultar_voz(
     conversacion_id: Annotated[
         UUID | None,
         Form(description='Conversación existente; si se omite, se crea una nueva'),
+    ] = None,
+    documento_ids: Annotated[
+        list[UUID] | None,
+        Form(
+            description=(
+                'Documentos concretos en los que buscar; si se omite, todos '
+                'los del usuario'
+            )
+        ),
     ] = None,
 ) -> StreamingResponse:
     # RNF6: sin modelos no se abre un stream condenado a fallar.
@@ -280,6 +297,20 @@ async def consultar_voz(
                 'App/ai-models/kokoro-82m.'
             ),
         )
+
+    filtros = None
+    if documento_ids:
+        # Mismo filtro que POST /v1/queries/: se valida antes de abrir el
+        # stream para responder 404/403 sin empezar a transcribir.
+        filtros = FiltrosBusqueda(documento_ids=list(dict.fromkeys(documento_ids)))
+        await _validar_documentos_filtrados(
+            documentos,
+            filtros.documento_ids,
+            usuario_id,
+        )
+    opciones = (
+        {'filtros': filtros.model_dump(exclude_none=True)} if filtros else None
+    )
 
     try:
         await voz.validar_conversacion(usuario_id, conversacion_id)
@@ -340,6 +371,7 @@ async def consultar_voz(
                 transcripcion,
                 usuario_id,
                 conversacion_id=conversacion_id,
+                opciones=opciones,
             )
             ms_rag = int(round((time.perf_counter() - t0) * 1000))
             yield _linea(

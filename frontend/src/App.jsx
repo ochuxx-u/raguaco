@@ -223,7 +223,9 @@ function App() {
       case 'voice':
         return (
           <VoicePage
+            conversationId={selectedConversationId}
             currentUser={currentUser}
+            onConversationCreated={handleConversationCreated}
             onOpenEvidencePage={handleOpenEvidence}
             onSelectedDocumentsChange={handleSelectedDocumentsChange}
             onStartNewConversation={() => handleNewConversation('voice')}
