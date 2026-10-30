@@ -116,7 +116,9 @@ function VoicePage({
     status === 'result' ||
     status === 'error' ||
     status === 'speaking'
-  const hasActiveStream = isBusy || status === 'speaking'
+  // El Detener rojo solo tiene sentido cuando el audio de la respuesta suena;
+  // durante el procesamiento no hay nada audible que cortar.
+  const isSpeaking = status === 'speaking'
   const hasSelectedDocuments = selectedDocumentIds.length > 0
   const showResults = Boolean(
     result && (result.transcripcion || result.respuesta),
@@ -568,7 +570,7 @@ function VoicePage({
               </button>
             )}
 
-            {hasActiveStream && (
+            {isSpeaking && (
               <button
                 className="voice-page__control voice-page__control--stop"
                 type="button"
