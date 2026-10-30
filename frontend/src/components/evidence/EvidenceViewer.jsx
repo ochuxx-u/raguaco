@@ -15,7 +15,6 @@ function EvidenceViewer({ source }) {
     source.categoria,
     source.seccion,
     source.pagina != null ? `Página ${source.pagina}` : null,
-    source.chunk != null ? `Chunk #${source.chunk}` : null,
   ].filter(Boolean)
 
   return (

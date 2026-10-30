@@ -9,6 +9,18 @@ export function getDocumentStateLabel(estado) {
   return DOCUMENT_STATES.find((state) => state.value === estado)?.label ?? estado
 }
 
+export function getDocumentPagesLabel(document) {
+  const pages = Number(document?.num_paginas)
+
+  if (!Number.isInteger(pages) || pages < 1) {
+    return '— páginas'
+  }
+
+  return `${pages.toLocaleString('es-ES')} ${
+    pages === 1 ? 'página' : 'páginas'
+  }`
+}
+
 export function getDocumentSecondaryText(document) {
   switch (document.estado) {
     case 'pendiente':
@@ -16,9 +28,8 @@ export function getDocumentSecondaryText(document) {
     case 'procesando':
       return `Indexando ${document.progreso ?? 0}%`
     case 'listo':
-      return `${(document.chunks ?? 0).toLocaleString('es-ES')} chunks`
     case 'error':
-      return 'Sin chunks'
+      return getDocumentPagesLabel(document)
     default:
       return ''
   }
@@ -32,7 +43,7 @@ export function getDocumentMetricLabel(estado) {
       return 'Progreso'
     case 'listo':
     case 'error':
-      return 'Chunks generados'
+      return 'Páginas'
     default:
       return 'Información'
   }
