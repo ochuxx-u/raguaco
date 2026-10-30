@@ -116,6 +116,8 @@ function VoicePage({
     status === 'result' ||
     status === 'error' ||
     status === 'speaking'
+  const hasActiveStream = isBusy || status === 'speaking'
+  const hasSelectedDocuments = selectedDocumentIds.length > 0
   const showResults = Boolean(
     result && (result.transcripcion || result.respuesta),
   )
@@ -378,6 +380,25 @@ function VoicePage({
     }
   }
 
+  // Cancela por completo el servicio de voz en curso: invalida los eventos del
+  // stream (requestRef), aborta el fetch —lo que corta la generación de
+  // fragmentos en el backend— y vacía el reproductor. Sin esto, al detener solo
+  // el audio, el stream seguía encolando fragmentos y la secuencia retomaba.
+  const stopVoiceFlow = () => {
+    requestRef.current += 1
+    abortRef.current?.abort()
+    abortRef.current = null
+    playerRef.current?.stop()
+
+    setStatus((current) => {
+      if (!isBusy && current !== 'speaking') {
+        return current
+      }
+
+      return showResults ? 'result' : 'idle'
+    })
+  }
+
   const handleStartNewConversation = () => {
     requestRef.current += 1
     abortRef.current?.abort()
@@ -484,29 +505,46 @@ function VoicePage({
           )}
 
           <div className="voice-page__controls">
-            {canStart && (
-              <button
-                className="voice-page__control voice-page__control--primary"
-                type="button"
-                aria-label="Iniciar reconocimiento de voz"
-                onClick={handleStart}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  aria-hidden="true"
+            {canStart &&
+              (hasSelectedDocuments ? (
+                <button
+                  className="voice-page__control voice-page__control--primary"
+                  type="button"
+                  aria-label="Iniciar reconocimiento de voz"
+                  onClick={handleStart}
                 >
-                  <rect x="9" y="3" width="6" height="11" rx="3" />
-                  <path d="M5 11a7 7 0 0 0 14 0" />
-                  <path d="M12 18v3M9 21h6" />
-                </svg>
-                {result ? 'Nueva consulta' : 'Iniciar'}
-              </button>
-            )}
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0 0 14 0" />
+                    <path d="M12 18v3M9 21h6" />
+                  </svg>
+                  {result ? 'Nueva consulta' : 'Iniciar'}
+                </button>
+              ) : (
+                <div className="voice-page__no-docs" role="status" aria-live="polite">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z" />
+                    <path d="M12 9v4M12 17h.01" />
+                  </svg>
+                  <span>Selecciona al menos un documento de referencia</span>
+                </div>
+              ))}
 
             {isListening && (
               <button
@@ -530,14 +568,23 @@ function VoicePage({
               </button>
             )}
 
-            {status === 'speaking' && (
+            {hasActiveStream && (
               <button
-                className="voice-page__control voice-page__control--secondary"
+                className="voice-page__control voice-page__control--stop"
                 type="button"
-                aria-label="Detener la reproducción de la respuesta"
-                onClick={() => playerRef.current?.stop()}
+                aria-label="Detener el servicio de voz"
+                onClick={stopVoiceFlow}
               >
-                Detener audio
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <rect x="7" y="7" width="10" height="10" rx="2" />
+                </svg>
+                Detener
               </button>
             )}
 
@@ -598,7 +645,6 @@ function VoicePage({
             {result.sources?.length > 0 ? (
               <div className="voice-page__evidence">
                 <EvidencePanel
-                  activeSourceId={result.sources[0]?.id ?? null}
                   onViewMore={handleOpenEvidence}
                   sources={result.sources}
                 />

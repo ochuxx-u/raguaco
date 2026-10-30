@@ -249,6 +249,56 @@
   background-color: rgba(59, 130, 246, 0.12);
 }
 
+/* Detener completo del servicio de voz: rojo pleno para que la acción de
+   cortar la secuencia se lea de inmediato (convención de stop). */
+.voice-page__control--stop {
+  color: var(--color-bg);
+  background-color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+
+.voice-page__control--stop:hover {
+  background-color: #FF7062;
+  border-color: #FF7062;
+}
+
+/* Mismo aviso que el chat cuando no hay documento de referencia (RF8):
+   píldora ámbar translúcida, es una indicación y no un error. */
+.voice-page__no-docs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 420px;
+  padding: 10px 16px;
+  color: var(--color-warning);
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  text-align: left;
+  animation: voice-no-docs-in 180ms ease-out;
+}
+
+.voice-page__no-docs svg {
+  flex: 0 0 auto;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes voice-no-docs-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .voice-page__error {
   max-width: 400px;
   color: var(--color-danger);
@@ -456,5 +506,11 @@
 @media (max-width: 480px) {
   .voice-page__control {
     flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-page__no-docs {
+    animation: none;
   }
 }
