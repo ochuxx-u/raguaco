@@ -1,3 +1,5 @@
+![Logo de Raguaco AI](Docs/logo_ini.png)
+
 # Raguaco 🤖 🇨🇴
 
 ¡Bienvenido a **Raguaco**! 👋
