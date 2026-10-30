@@ -432,10 +432,24 @@ function VoicePage({
         </h1>
 
         <div className="voice-page__stage">
-          <div
-            className={`voice-page__orb voice-page__orb--${status}`}
-            aria-hidden="true"
-          />
+          <div className="voice-page__orb-wrap">
+            {isBusy && (
+              <>
+                <span
+                  className="voice-page__halo voice-page__halo--one"
+                  aria-hidden="true"
+                />
+                <span
+                  className="voice-page__halo voice-page__halo--two"
+                  aria-hidden="true"
+                />
+              </>
+            )}
+            <div
+              className={`voice-page__orb voice-page__orb--${status}`}
+              aria-hidden="true"
+            />
+          </div>
 
           <p className="voice-page__status" role="status" aria-live="polite">
             {content.title}
